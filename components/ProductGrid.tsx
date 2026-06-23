@@ -2,7 +2,7 @@ export default function ProductGrid({
   products,
   selectedCategory,
   addToCart,
-  hasCategories, // ✅ new prop
+  hasCategories,
 }: any) {
   // ✅ decide what to show
   const displayedProducts =

@@ -49,6 +49,28 @@ If an exact match is not found:
 - Try to match the closest product name
 - Do NOT ignore the instruction
 
+DISCOUNT RULES:
+
+- Discounts are stored as an array "discounts"
+- Each discount has:
+  { "name", "value", "active" }
+
+- Only ONE discount can be active at a time
+
+- If user says:
+  "activate black friday discount"
+  → set that one active=true and others false
+
+- If user says:
+  "disable discount"
+  → set all active=false
+
+- If user says:
+  "change default discount to 20%"
+  → update the value
+
+- NEVER remove the discounts array
+
 ⚠️ VERY IMPORTANT:
 - You MUST actually modify the data
 - Do not return unchanged JSON
@@ -71,6 +93,10 @@ User instruction:
 
     let text =
       data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    
+    if (!text) {
+      return NextResponse.json(currentData);
+    }
 
     // ✅ clean markdown
     text = text.replace(/```json|```/g, "").trim();
@@ -89,4 +115,3 @@ User instruction:
     return NextResponse.json(currentData); // fallback
   }
 }
-

@@ -35,7 +35,7 @@ Tone:
 - Clear
 
 Format:
-"Sure ,I will [action]. Please confirm by typing 'yes' or 'no'."
+"Sure, I will [action]. Please confirm by typing 'yes' or 'no'."
 
 Examples:
 

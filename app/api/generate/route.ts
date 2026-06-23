@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -37,6 +38,10 @@ Structure:
       "attributes": {}
     }
   ],
+  "discounts": [
+    { "name": "Default", "value": 10, "active": true },
+    { "name": "Black Friday", "value": 50, "active": false }
+  ],
   "actions": []
 }
 
@@ -47,6 +52,12 @@ GENERAL:
 - Always generate realistic and relevant products
 - Always include actions:
   ["add_to_cart", "apply_discount", "checkout"]
+
+- Include discount system:
+"discounts": [
+  { "name": "Default", "value": 10, "active": true },
+  { "name": "Black Friday", "value": 50, "active": false }
+]
 
 STRUCTURE MODES:
 
@@ -123,7 +134,37 @@ ${prompt}
     try {
       const json = JSON.parse(text);
 
-      return NextResponse.json(json);
+      // ✅ TEMP USER (replace later with auth)
+      const userId = "000000000000000000000000";
+
+      let created;
+      try {
+        created = await prisma.pOS.create({
+          data: {
+            userId,
+            name: prompt,
+            data: {
+              current: json,
+              history: [
+                {
+                  label: "Initial POS",
+                  data: json,
+                },
+              ],
+            },
+          },
+        });
+
+        console.log("✅ POS saved to DB");
+      } catch (err) {
+        console.error("❌ Failed to save POS:", err);
+      }
+      return NextResponse.json({
+        data: json,
+        posId: created?.id ?? null,
+      });
+
+      
     } catch (err) {
       console.error("INVALID JSON:", text);
 

@@ -6,31 +6,45 @@ import Logo from "@/components/Logo";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
-import ActionsPanel from "@/components/ActionsPanel";
 import ChatPanel from "@/components/ChatPanel";
 import { POSData } from "@/lib/types";
 
 export default function POSPage() {
   const [data, setData] = useState<POSData | null>(null);
+  const [historyFromDB, setHistoryFromDB] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [cart, setCart] = useState<any[]>([]);
-  const [discount, setDiscount] = useState(0);
   const router = useRouter();
+  
 
   // ✅ load data
   useEffect(() => {
-    const stored = localStorage.getItem("pos-data");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setData(parsed);
+    const fetchPOS = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const posId = urlParams.get("posId");
 
-      // ✅ SAFE category init
-      if (parsed.categories && parsed.categories.length > 0) {
-        setSelectedCategory(parsed.categories[0]);
-      } else {
-        setSelectedCategory("");
+        if (!posId) return;
+
+        const res = await fetch(`/api/pos?posId=${posId}`);
+        const response = await res.json();
+
+        if (response) {
+          setData(response.current);
+          setHistoryFromDB(response.history || []);
+
+          if (response.current.categories?.length > 0) {
+            setSelectedCategory(response.current.categories[0]);
+          } else {
+            setSelectedCategory("");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load POS", err);
       }
-    }
+    };
+
+    fetchPOS();
   }, []);
 
   // ✅ detect mode
@@ -82,16 +96,6 @@ export default function POSPage() {
     );
   };
 
-  const pay = () => {
-    alert("Payment successful ✅");
-    setCart([]);
-    setDiscount(0);
-  };
-
-  const applyDiscount = () => {
-    setDiscount(10);
-  };
-
   if (!data) {
     return (
       <div className="p-4 text-center">
@@ -118,6 +122,29 @@ export default function POSPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSave = async () => {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const posId = urlParams.get("posId");
+
+    try {
+      await fetch("/api/pos/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        }, 
+        body: JSON.stringify({
+          data,
+          posId,
+        }),
+      });
+
+      alert("✅ POS saved successfully");
+    } catch (err) {
+      alert("❌ Failed to save POS");
+    }
+  };
+
   return (
     <main>
       {/* ✅ TOP TOOLBAR */}
@@ -135,6 +162,13 @@ export default function POSPage() {
         >
           Export JSON
         </button>
+
+        <button
+          onClick={handleSave}
+          className="bg-blue-500 text-white px-3 py-2 rounded"
+        >
+          Save POS
+        </button>
       </div>
 
       <Logo name={data.logo} />
@@ -145,6 +179,7 @@ export default function POSPage() {
         <div className="w-[35%] border-r bg-white p-4 flex flex-col">
           <ChatPanel
             data={data}
+            historyFromDB={historyFromDB}
             onUpdate={(newData: POSData) => setData(newData)}
           />
         </div>
@@ -174,12 +209,11 @@ export default function POSPage() {
             removeFromCart={removeFromCart}
             increaseQty={increaseQty}
             decreaseQty={decreaseQty}
-            discount={discount}
+            data={data}
           />
         </div>
       </div>
 
-      <ActionsPanel pay={pay} applyDiscount={applyDiscount} />
     </main>
   );
 }

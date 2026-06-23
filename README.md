@@ -151,50 +151,104 @@ Example:
   "actions": ["add_to_cart", "apply_discount", "checkout"]
 }
 
+## ⚠️ Current Limitations
+
+While AutoPOS provides a powerful AI-driven POS generation experience, there are a few current limitations:
+
+* AI-generated content may occasionally misinterpret ambiguous or vague instructions
+* Best results are achieved with clear and specific prompts
+* Data persistence is currently limited to browser storage (localStorage)
+* Generated POS systems are intended for prototyping and demonstration purposes
+* No authentication or multi-user collaboration support yet
+
 ---
 
-## ⚠️ Limitations
+## 🔮 Roadmap
 
-- AI responses may occasionally misinterpret vague instructions  
-- Requires clear and precise command phrasing for best results  
-- No persistent database (data stored in memory / localStorage only)  
+Planned improvements for future versions include:
 
----
 
-## 🔮 Future Improvements
+### 🧠 AI Improvements
 
-- 🔁 Undo & redo system  
-- 🔍 Visual difference (diff) between versions  
-- 🧠 Improved AI intent detection  
-- 👤 User accounts & project persistence  
-- 💳 Payment integration (Stripe)  
-- 🎨 UI theming based on business type  
+* Better intent recognition
+* More accurate modification planning
+* Context-aware business customization
+
+### 👤 User Management
+
+* User authentication
+* Project saving and loading
+* Cloud synchronization
+
+### 💳 Business Features
+
+* Stripe payment integration
+* Inventory management
+* Sales analytics and reporting
+
+### 🎨 Customization
+
+* Theme generation based on business type
+* Custom branding options
+* Advanced layout customization
 
 ---
 
 ## 🚀 Getting Started
 
+### 1. Clone the Repository
 
-1. Clone the repository
+```bash
 git clone https://github.com/your-username/autopos.git
+cd autopos
+```
 
-2. Install dependencies
+### 2. Install Dependencies
+
+```bash
 npm install
+```
 
-3. Setup environment variables
-Create: .env.local
+### 3. Configure Environment Variables
 
-Add:
+Create a `.env.local` file in the project root:
+
+```env
 GEMINI_API_KEY=your_api_key_here
+```
 
-4. Run the app
+### 4. Start the Development Server
+
+```bash
 npm run dev
+```
 
-💡 Example Prompts
-tech store
-restaurant POS system
-clothing shop with sizes
-tech store without categories
+### 5. Open the Application
 
-👨‍💻 Author
-Mohamed Amin Rebai
+Navigate to:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## 💡 Example Prompts
+
+Try generating POS systems with prompts such as:
+
+* `tech store`
+* `restaurant POS system`
+* `clothing shop with sizes`
+* `electronics store with categories`
+* `tech store without categories`
+
+---
+
+## 👨‍💻 Author
+
+**Mohamed Amin Rebai**
+
+Software Engineering Student | Full-Stack Developer | AI Enthusiast
+
+Built with Next.js, TypeScript, Tailwind CSS, and Gemini AI.

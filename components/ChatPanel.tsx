@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 export default function ChatPanel({
   data,
   onUpdate,
+  historyFromDB,
 }: any) {
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; text: string }[]
@@ -14,21 +15,7 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
 
-  const [history, setHistory] = useState<
-    { data: any; label: string }[]
-  >([]);
-
-  // ✅ INITIAL VERSION
-  useEffect(() => {
-    if (data && history.length === 0) {
-      setHistory([
-        {
-          data,
-          label: "Initial POS",
-        },
-      ]);
-    }
-  }, [data]);
+  const history = historyFromDB || [];
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,15 +80,6 @@ export default function ChatPanel({
             setPendingInstruction(null);
             return;
           }
-
-          // ✅ ✅ SAVE ONLY NEW VERSION (no duplicates)
-          setHistory((prev) => [
-            ...prev,
-            {
-              data: updated,
-              label: pendingInstruction,
-            },
-          ]);
 
           setMessages((prev) => [
             ...prev,
@@ -187,11 +165,15 @@ export default function ChatPanel({
     }
   };
 
-  // ✅ ✅ RESTORE ONLY WHEN BUTTON CLICKED
+  // ✅ RESTORE VERSION
   const restoreVersion = () => {
     if (selectedVersion === null) return;
 
-    onUpdate(history[selectedVersion].data);
+    const selected = history[selectedVersion];
+
+    if (!selected) return;
+
+    onUpdate(selected.data);
 
     setMessages((prev) => [
       ...prev,
@@ -203,6 +185,8 @@ export default function ChatPanel({
 
     setSelectedVersion(null);
   };
+
+  const currentVersionIndex = history.length - 1;
 
   return (
     <div className="h-full flex flex-col">
@@ -221,10 +205,13 @@ export default function ChatPanel({
               className={`text-xs mb-1 cursor-pointer px-1 py-1 rounded ${
                 selectedVersion === i
                   ? "bg-black text-white"
+                  : i === currentVersionIndex
+                  ? "bg-green-100 font-semibold"
                   : "text-blue-600 hover:underline"
               }`}
             >
               {i + 1}. {h.label}
+              {i === currentVersionIndex && " (current)"}
             </div>
           ))}
 

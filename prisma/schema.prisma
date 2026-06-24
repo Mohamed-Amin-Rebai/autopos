@@ -9,8 +9,10 @@ datasource db {
 
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId   String   @unique
   email     String   @unique
   name      String?
+  role      String   @default("user")
   createdAt DateTime @default(now())
 
   pos    POS[]

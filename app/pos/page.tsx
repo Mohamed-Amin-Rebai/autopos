@@ -14,17 +14,23 @@ export default function POSPage() {
   const [historyFromDB, setHistoryFromDB] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [cart, setCart] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const router = useRouter();
-  
+
+  // ✅ get posId once
+  const urlParams = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search)
+    : null;
+  const posId = urlParams?.get("posId");
 
   // ✅ load data
   useEffect(() => {
     const fetchPOS = async () => {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const posId = urlParams.get("posId");
-
         if (!posId) return;
+
+        setLoading(true);
 
         const res = await fetch(`/api/pos?posId=${posId}`);
         const response = await res.json();
@@ -41,17 +47,32 @@ export default function POSPage() {
         }
       } catch (err) {
         console.error("Failed to load POS", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchPOS();
-  }, []);
+  }, [posId]);
 
-  // ✅ detect mode
+  // ✅ loading UI
+  if (loading) {
+    return <div className="p-4 text-center">Loading POS...</div>;
+  }
+
+  // ✅ no data fallback
+  if (!data) {
+    return (
+      <div className="p-4 text-center">
+        No data found. Go back and generate one.
+      </div>
+    );
+  }
+
   const hasCategories =
     data?.categories && data.categories.length > 0;
 
-  // ✅ cart logic (same as before)
+  // ✅ cart logic
   const addToCart = (product: any) => {
     const existing = cart.find(
       (item) => item.product.id === product.id
@@ -96,14 +117,6 @@ export default function POSPage() {
     );
   };
 
-  if (!data) {
-    return (
-      <div className="p-4 text-center">
-        No data found. Go back and generate one.
-      </div>
-    );
-  }
-
   const goBack = () => {
     router.push("/");
   };
@@ -123,21 +136,29 @@ export default function POSPage() {
   };
 
   const handleSave = async () => {
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const posId = urlParams.get("posId");
+    if (!posId) {
+      alert("Missing POS ID");
+      return;
+    }
 
     try {
       await fetch("/api/pos/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-        }, 
+        },
         body: JSON.stringify({
           data,
           posId,
         }),
       });
+
+      // ✅ refresh from DB after save
+      const res = await fetch(`/api/pos?posId=${posId}`);
+      const updated = await res.json();
+
+      setData(updated.current);
+      setHistoryFromDB(updated.history);
 
       alert("✅ POS saved successfully");
     } catch (err) {
@@ -165,6 +186,7 @@ export default function POSPage() {
 
         <button
           onClick={handleSave}
+          disabled={loading}
           className="bg-blue-500 text-white px-3 py-2 rounded"
         >
           Save POS
@@ -187,7 +209,6 @@ export default function POSPage() {
         {/* ✅ POS */}
         <div className="w-[65%] flex">
 
-          {/* ✅ ONLY SHOW IF HAS CATEGORIES */}
           {hasCategories && (
             <CategoryList
               categories={data.categories}
@@ -196,7 +217,6 @@ export default function POSPage() {
             />
           )}
 
-          {/* ✅ PASS MODE TO GRID */}
           <ProductGrid
             products={data.products}
             selectedCategory={selectedCategory}
@@ -213,7 +233,6 @@ export default function POSPage() {
           />
         </div>
       </div>
-
     </main>
   );
 }

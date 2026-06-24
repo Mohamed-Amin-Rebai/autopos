@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { cart, userId, posId, discount, paymentMethod } = body;
+    const { cart, posId, discount, paymentMethod } = body;
+
+    const dbUser = await getOrCreateUser();
+    if (!dbUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = dbUser.id;
+
 
     if (!cart || cart.length === 0 || !userId || !posId) {
       return NextResponse.json(
@@ -20,7 +28,6 @@ export async function POST(req: Request) {
     );
 
     const discountValue = discount?.value || 0;
-
     const total = subtotal - (subtotal * discountValue) / 100;
 
     await prisma.order.create({

@@ -1,108 +1,246 @@
-# 🚀 AutoPOS — AI-Powered POS Generator & Editor
+# 🚀 AutoPOS
 
-AutoPOS is an intelligent web application that allows users to generate a fully functional Point of Sale (POS) system from a simple text description, and then dynamically modify it in real-time using an AI assistant.
+### AI-Powered POS Generator & Editor
 
-It combines AI generation, structured data modeling, dynamic UI rendering, and conversational interaction into a single powerful platform.
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-Blue)
+![MongoDB](https://img.shields.io/badge/MongoDB-Green)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748)
+![Clerk](https://img.shields.io/badge/Auth-Clerk-purple)
+![Gemini](https://img.shields.io/badge/AI-Gemini-orange)
 
----
+AutoPOS is an AI-powered SaaS platform that enables users to generate, customize, and manage fully functional Point of Sale (POS) systems using natural language.
 
-## ✨ Features
+The platform combines:
 
-### 🧠 AI POS Generation
-- Generate a complete POS system using natural language
-- Supports multiple business types (tech, food, clothing, etc.)
-- Automatically structures:
-  - Products
-  - Categories
-  - Business-specific attributes
+* 🤖 AI Generation
+* 💬 Conversational Editing
+* 🔐 Authentication & RBAC
+* 📊 Analytics Dashboards
+* ⚡ Real-Time Updates
+* 🧾 Version History
 
----
-
-### 🔀 Dual Mode System
-AutoPOS supports two structural modes:
-
-- **Categorized Mode:**
-  - Products grouped by categories
-  - Sidebar navigation
-
-- **Flat Mode:**
-  - No categories
-  - All products displayed in one unified list
-
-> Mode is determined dynamically based on the user prompt.
+into one complete end-to-end solution.
 
 ---
 
-### 💬 AI Assistant (Conversational Editing)
-- Modify the POS system through natural language
-- Example commands:
-  - `add product keyboard`
-  - `remove category Accessories`
-  - `change price of Laptop Pro`
+# ✨ Core Features
+
+## 🧠 AI POS Generation
+
+Generate complete POS systems from simple prompts:
+
+```text
+tech store
+restaurant POS
+clothing shop with sizes
+electronics store with categories
+```
+
+The AI automatically creates:
+
+* Products
+* Categories
+* Business attributes
+* Structured JSON data
 
 ---
 
-### ✅ Confirmation System
-- Every AI action is previewed before execution
-- Safe modifications through:
-    AI → plan → user confirmation → execution
+## 🔀 Dual POS Modes
+
+### Categorized Mode
+
+* Products grouped by categories
+* Sidebar navigation
+* Better for large inventories
+
+### Flat Mode
+
+* Single unified product list
+* No categories required
+* Faster workflow for small businesses
+
+> POS structure is automatically determined from the user's prompt.
 
 ---
 
-### 🧾 Version History System
-- Automatically saves each valid POS state
-- View history of changes
-- Select a version and restore it manually
+## 💬 Conversational Editing
+
+Modify an existing POS using natural language:
+
+```text
+add product keyboard
+remove category Accessories
+change price of Laptop Pro
+```
+
+No manual configuration required.
+
+---
+
+## ✅ Safe Confirmation Workflow
+
+Every AI action is reviewed before execution.
+
+```text
+User Request
+      ↓
+AI Plan
+      ↓
+User Confirmation
+      ↓
+Database Update
+      ↓
+UI Refresh
+```
+
+This prevents unwanted modifications.
+
+---
+
+### 🧾 Version History
+- Track POS changes over time
+- Restore previous versions
+- Stored in database with history snapshots
 
 ---
 
 ### ⚡ Real-Time UI Updates
-- UI updates instantly based on AI-modified JSON
-- Fully data-driven frontend architecture
+- Instant frontend updates based on JSON state
+- Fully data-driven POS UI
 
 ---
 
 ### 🖼️ Image Support
-- Upload:
-- Logo
-- Product images
+- Upload custom:
+  - Logos
+  - Product images
 - Dynamically rendered in UI
 
 ---
 
 ### 📤 Export Functionality
-- Export current POS as JSON
-- Reusable configuration for other systems
+- Export POS configuration as JSON
+- Reusable and portable
+
+---
+
+## 👤 Authentication & Users
+
+### 🔐 Clerk Authentication
+- Secure login & signup
+- Google OAuth support
+- Session & user management handled by Clerk
+
+---
+
+### 🧑 User Database Sync
+- Each Clerk user is synced to your database
+- Stored with:
+  - `clerkId`
+  - `email`
+  - `role`
+
+---
+
+### 🛡️ Role-Based Access (RBAC)
+
+- **User**
+  - Can create and manage their own POS
+  - Access personal dashboard
+
+- **Admin**
+  - Access all users
+  - View all POS systems
+  - Manage all orders
+
+---
+
+## 📊 Dashboard System
+
+### 👤 User Dashboard
+- View all owned POS systems
+- See:
+  - Order count
+  - Revenue
+- Open POS instantly
+
+---
+
+### 👑 Admin Dashboard
+- View all users
+- Explore each user’s POS systems
+- Inspect orders per POS
+- Mark orders as paid
+
+---
+
+## 💳 Payment Logic
+
+- Orders can be:
+  - ✅ Paid
+  - ⏳ Pending
+
+- Admin can:
+
+Mark pending → paid
+
+- UI updates instantly (no reload)
+
+---
+
+## 🔒 API Security
+
+- Protected routes using Clerk middleware
+- Admin-only endpoints secured:
+  - `/api/orders/update`
+  - `/api/users`
+
+- Unauthorized users cannot:
+  - Modify order status
+  - Access admin data
 
 ---
 
 ## 🧱 Tech Stack
 
 ### Frontend
-- **Next.js (React)**
+- **Next.js (App Router)**
+- React (Client & Server Components)
 - Tailwind CSS
 - TypeScript
 
 ---
 
 ### Backend
-- Next.js API routes
-- Gemini AI (Google Generative AI)
+- Next.js API Routes
+- Prisma ORM
+- MongoDB
 
 ---
 
 ### AI Layer
+- Gemini AI (Google Generative AI)
 - Prompt engineering for:
-- Generation
-- Planning
-- Controlled updates
+  - Generation
+  - Planning
+  - Controlled updates
 
 ---
 
-## 🧠 System Architecture
-Frontend (React / Next.js)
+### Auth
+- Clerk (Authentication & Sessions)
+
+---
+
+## 🧠 Architecture
+
+
+Frontend (Next.js App Router)
 ↓
-API Routes (/generate, /plan-pos, /update-pos)
+API Routes (Server)
+↓
+Clerk Auth + Prisma DB
 ↓
 Gemini AI (LLM)
 ↓
@@ -115,21 +253,20 @@ Dynamic UI Rendering
 ## 🔄 Data Flow
 
 ### Generation
-User Prompt → AI → Structured JSON → UI Render
+
+Prompt → AI → JSON → DB → UI
 
 ### Editing
-User Instruction
-→ AI Plan
-→ User Confirmation
-→ AI Update
-→ New JSON
-→ UI Update
+
+Instruction → AI Plan → Confirm → Update → UI
+
+### Orders
+
+User action → API → DB → Dashboard
 
 ---
 
-## 📊 Data Model
-
-Example:
+## 📊 Example Data Model
 
 ```json
 {
@@ -141,107 +278,51 @@ Example:
       "name": "Laptop Pro 15",
       "price": 3500,
       "category": "Computers",
-      "brand": "TechBrand",
       "attributes": {
         "RAM": "16GB",
         "Storage": "512GB SSD"
       }
     }
-  ],
-  "actions": ["add_to_cart", "apply_discount", "checkout"]
+  ]
 }
-
-## ⚠️ Current Limitations
-
-While AutoPOS provides a powerful AI-driven POS generation experience, there are a few current limitations:
-
-* AI-generated content may occasionally misinterpret ambiguous or vague instructions
-* Best results are achieved with clear and specific prompts
-* Data persistence is currently limited to browser storage (localStorage)
-* Generated POS systems are intended for prototyping and demonstration purposes
-* No authentication or multi-user collaboration support yet
-
----
-
-## 🔮 Roadmap
-
-Planned improvements for future versions include:
-
-
-### 🧠 AI Improvements
-
-* Better intent recognition
-* More accurate modification planning
-* Context-aware business customization
-
-### 👤 User Management
-
-* User authentication
-* Project saving and loading
-* Cloud synchronization
-
-### 💳 Business Features
-
-* Stripe payment integration
-* Inventory management
-* Sales analytics and reporting
-
-### 🎨 Customization
-
-* Theme generation based on business type
-* Custom branding options
-* Advanced layout customization
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the Repository
-
-```bash
+1. Clone
 git clone https://github.com/your-username/autopos.git
 cd autopos
-```
 
-### 2. Install Dependencies
-
-```bash
+2. Install
 npm install
-```
 
-### 3. Configure Environment Variables
+3. Environment
+GEMINI_API_KEY=your_api_key
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...`
 
-Create a `.env.local` file in the project root:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-### 4. Start the Development Server
-
-```bash
+4. Run
 npm run dev
-```
-
-### 5. Open the Application
-
-Navigate to:
-
-```text
-http://localhost:3000
-```
 
 ---
 
 ## 💡 Example Prompts
 
-Try generating POS systems with prompts such as:
+tech store
+restaurant POS system
+clothing shop with sizes
+electronics store with categories
+flat POS no categories
 
-* `tech store`
-* `restaurant POS system`
-* `clothing shop with sizes`
-* `electronics store with categories`
-* `tech store without categories`
+---
+
+## ☁️ Deployment
+
+- Frontend: Vercel
+- Database: MongoDB Atlas
+- Authentication: Clerk
+- AI: Gemini
 
 ---
 
@@ -249,6 +330,8 @@ Try generating POS systems with prompts such as:
 
 **Mohamed Amin Rebai**
 
-Software Engineering Student | Full-Stack Developer | AI Enthusiast
+Software Engineering Student  
+Full-Stack Developer  
+AI Systems Builder
 
-Built with Next.js, TypeScript, Tailwind CSS, and Gemini AI.
+⭐ If you found this project interesting, consider starring the repository.

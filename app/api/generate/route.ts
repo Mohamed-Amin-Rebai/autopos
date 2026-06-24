@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -134,8 +135,11 @@ ${prompt}
     try {
       const json = JSON.parse(text);
 
-      // ✅ TEMP USER (replace later with auth)
-      const userId = "000000000000000000000000";
+      const dbUser = await getOrCreateUser();
+      if (!dbUser) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const userId = dbUser.id;
 
       let created;
       try {

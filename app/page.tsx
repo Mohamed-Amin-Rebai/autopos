@@ -56,7 +56,7 @@ export default function Home() {
                 onClick={goToApp}
                 className="text-gray-600 hover:text-black text-sm"
               >
-                Go to App
+                Home
               </button>
 
               <UserButton/>

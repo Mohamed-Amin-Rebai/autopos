@@ -310,11 +310,13 @@ npm run dev
 
 ## 💡 Example Prompts
 
+```text
 tech store
 restaurant POS system
 clothing shop with sizes
 electronics store with categories
 flat POS no categories
+```
 
 ---
 

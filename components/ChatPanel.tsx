@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Bot, User, Send, History, CheckCircle } from "lucide-react";
 
 export default function ChatPanel({
   data,
@@ -23,6 +24,8 @@ export default function ChatPanel({
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const currentVersionIndex = history.length - 1;
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -41,7 +44,7 @@ export default function ChatPanel({
       if (["yes", "y", "confirm"].includes(instruction)) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", text: "Applying requested change..." },
+          { role: "assistant", text: "Applying changes..." },
         ]);
 
         try {
@@ -54,10 +57,10 @@ export default function ChatPanel({
           });
 
           const updated = await res.json();
-
+          
           setMessages((prev) => prev.slice(0, -1));
 
-          if (!updated || !updated.products || !updated.actions) {
+          if (!updated || !updated.products) {
             setMessages((prev) => [
               ...prev,
               { role: "assistant", text: "❌ Invalid update." },
@@ -66,46 +69,25 @@ export default function ChatPanel({
             return;
           }
 
-          const isSame =
-            JSON.stringify(updated) === JSON.stringify(data);
-
-          if (isSame) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                text: "⚠️ No changes were applied.",
-              },
-            ]);
-            setPendingInstruction(null);
-            return;
-          }
+          onUpdate(updated);
 
           setMessages((prev) => [
             ...prev,
-            {
-              role: "assistant",
-              text: "Operation completed successfully.",
-            },
+            { role: "assistant", text: "✅ Update applied." },
           ]);
 
-          onUpdate(updated);
           setPendingInstruction(null);
         } catch {
           setMessages((prev) => [
             ...prev,
-            {
-              role: "assistant",
-              text: "❌ Error applying change",
-            },
+            { role: "assistant", text: "❌ Error applying change" },
           ]);
-          setPendingInstruction(null);
         }
 
         return;
       }
 
-      if (["no", "cancel", "stop"].includes(instruction)) {
+      if (["no", "cancel"].includes(instruction)) {
         setMessages((prev) => [
           ...prev,
           { role: "assistant", text: "Operation cancelled." },
@@ -113,16 +95,6 @@ export default function ChatPanel({
         setPendingInstruction(null);
         return;
       }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text: 'Please reply with "yes" or "no".',
-        },
-      ]);
-
-      return;
     }
 
     // ✅ PLAN MODE
@@ -134,141 +106,228 @@ export default function ChatPanel({
     try {
       const res = await fetch("/api/plan-pos", {
         method: "POST",
-        body: JSON.stringify({
-          instruction: instructionRaw,
-        }),
+        body: JSON.stringify({ instruction: instructionRaw }),
       });
 
       const result = await res.json();
-
       setMessages((prev) => prev.slice(0, -1));
-
-      const message =
-        result?.message && result.message.trim().length > 0
-          ? result.message
-          : "⚠️ I couldn’t understand the request.";
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: message },
+        {
+          role: "assistant",
+          text: result.message || "⚠️ Could not understand.",
+        },
       ]);
 
       setPendingInstruction(instructionRaw);
     } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          text: "❌ Failed to process request",
-        },
+        { role: "assistant", text: "❌ Failed" },
       ]);
     }
   };
 
-  // ✅ RESTORE VERSION
-  const restoreVersion = () => {
-    if (selectedVersion === null) return;
-
-    const selected = history[selectedVersion];
-
-    if (!selected) return;
-
-    onUpdate(selected.data);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        text: "Restored selected version.",
-      },
-    ]);
-
-    setSelectedVersion(null);
-  };
-
-  const currentVersionIndex = history.length - 1;
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
 
-      <h2 className="font-bold mb-4">AI Assistant</h2>
+      {/* ✅ HEADER - Premium */}
+      <div className="px-5 py-4 bg-gradient-to-r from-indigo-50/80 to-white border-b border-gray-200/60">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-indigo-100 rounded-lg">
+            <Bot className="w-4 h-4 text-indigo-600" />
+          </div>
+          <h2 className="font-semibold text-gray-800 text-sm tracking-wide">
+            AI Assistant
+          </h2>
+          <span className="ml-auto flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full inline-block" />
+            <span className="text-[10px] text-gray-400 font-medium">Online</span>
+          </span>
+        </div>
+      </div>
 
-      {/* ✅ HISTORY */}
+      {/* ✅ HISTORY - Enhanced */}
       {history.length > 0 && (
-        <div className="mb-4 border p-2 rounded bg-gray-50 max-h-40 overflow-y-auto">
-          <p className="text-sm font-semibold mb-2">History</p>
+        <div className="px-3 py-2 border-b border-gray-200/60 bg-gray-50/50 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+          <div className="flex items-center gap-2 mb-2">
+            <History className="w-3.5 h-3.5 text-gray-400" />
+            <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+              History
+            </p>
+          </div>
 
-          {history.map((h, i) => (
-            <div
-              key={i}
-              onClick={() => setSelectedVersion(i)}
-              className={`text-xs mb-1 cursor-pointer px-1 py-1 rounded ${
-                selectedVersion === i
-                  ? "bg-black text-white"
-                  : i === currentVersionIndex
-                  ? "bg-green-100 font-semibold"
-                  : "text-blue-600 hover:underline"
-              }`}
-            >
-              {i + 1}. {h.label}
-              {i === currentVersionIndex && " (current)"}
-            </div>
-          ))}
-
-          {/* ✅ RESTORE BUTTON */}
-          {selectedVersion !== null && (
-            <button
-              onClick={restoreVersion}
-              className="mt-2 w-full bg-black text-white text-sm py-1 rounded"
-            >
-              Restore Selected Version
-            </button>
-          )}
+          <div className="space-y-1">
+            {history.map((h: any, i: number) => {
+              const isCurrent = i === currentVersionIndex;
+              const isSelected = selectedVersion === i;
+              
+              return (
+                <div
+                  key={i}
+                  onClick={() => setSelectedVersion(i)}
+                  className={`
+                    group flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg cursor-pointer 
+                    transition-all duration-200
+                    ${isSelected 
+                      ? "bg-indigo-600 text-white shadow-sm" 
+                      : isCurrent
+                        ? "bg-emerald-50 text-gray-700 hover:bg-emerald-100/50"
+                        : "hover:bg-gray-100 text-gray-600"
+                    }
+                  `}
+                >
+                  <span className={`
+                    flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold
+                    ${isSelected 
+                      ? "bg-white/20 text-white" 
+                      : isCurrent
+                        ? "bg-emerald-200 text-emerald-600"
+                        : "bg-gray-200 text-gray-400"
+                    }
+                  `}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 truncate font-medium">
+                    {h.label}
+                    {isCurrent && " (current)"}
+                  </span>
+                  {isCurrent && (
+                    <CheckCircle className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* ✅ CHAT */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`p-2 rounded max-w-[80%] ${
-              msg.role === "user"
-                ? "bg-black text-white self-end ml-auto"
-                : "bg-gray-200 text-black self-start"
-            }`}
-          >
-            {msg.role === "assistant" && (
-              <div className="text-xs text-gray-500 mb-1">
-                AutoPOS AI
-              </div>
-            )}
-            {msg.text}
+      {/* ✅ CHAT AREA - Enhanced */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-200">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+              <Bot className="w-8 h-8 text-indigo-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-600">How can I help you?</p>
+            <p className="text-xs text-gray-400 mt-1 max-w-[200px]">
+              Try: "Add a drinks category" or "Increase prices by 10%"
+            </p>
           </div>
-        ))}
-        <div ref={endRef}></div>
+        )}
+
+        {messages.map((msg, i) => {
+          const isUser = msg.role === "user";
+          const isThinking = msg.text === "🤖 Thinking...";
+          
+          return (
+            <div
+              key={i}
+              className={`flex items-start gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
+            >
+              {/* Avatar */}
+              <div className={`
+                flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center
+                ${isUser 
+                  ? "bg-gradient-to-br from-gray-700 to-gray-800" 
+                  : "bg-gradient-to-br from-indigo-500 to-indigo-600"
+                }
+              `}>
+                {isUser ? (
+                  <User className="w-3.5 h-3.5 text-white" />
+                ) : (
+                  <Bot className="w-3.5 h-3.5 text-white" />
+                )}
+              </div>
+
+              {/* Message bubble */}
+              <div className={`flex-1 max-w-[85%] ${isUser ? "flex justify-end" : ""}`}>
+                <div className={`
+                  inline-block px-4 py-2.5 rounded-2xl text-sm
+                  ${isUser 
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-500/20" 
+                    : "bg-gray-100 text-gray-700"
+                  }
+                  ${isThinking ? "opacity-70" : ""}
+                `}>
+                  {isUser ? (
+                    <span>{msg.text}</span>
+                  ) : (
+                    <>
+                      <div className="text-[10px] text-gray-400 font-medium mb-1">
+                        AutoPOS AI
+                      </div>
+                      <span>{msg.text}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        
+        <div ref={endRef} />
       </div>
 
-      {/* ✅ INPUT */}
-      <div className="flex gap-2">
-        <input
-          className="flex-1 border p-2 rounded focus:outline-none"
-          placeholder="e.g. add drinks category..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") sendMessage();
-          }}
-        />
+      {/* ✅ INPUT - Enhanced */}
+      <div className="border-t border-gray-200/60 p-4 bg-gray-50/50">
+        <div className="flex items-center gap-2 bg-white rounded-2xl border border-gray-200/60 p-1.5 shadow-sm focus-within:border-indigo-300 focus-within:shadow-md focus-within:shadow-indigo-500/10 transition-all">
+          
+          <input
+            className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400 px-3 py-2.5"
+            placeholder="Ask AutoPOS AI..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") sendMessage();
+            }}
+          />
 
-        <button
-          onClick={sendMessage}
-          disabled={!input.trim()}
-          className="bg-black text-white px-3 rounded hover:bg-gray-800 cursor-pointer disabled:opacity-50"
-        >
-          Send
-        </button>
+          <button
+            onClick={sendMessage}
+            disabled={!input.trim()}
+            className={`
+              flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium
+              transition-all duration-200 flex items-center gap-2
+              ${input.trim()
+                ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98]"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }
+            `}
+          >
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">Send</span>
+          </button>
+
+        </div>
+
+        {/* Pending instruction indicator */}
+        {pendingInstruction && (
+          <div className="mt-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200/50 rounded-lg">
+            <p className="text-xs text-yellow-700">
+              ⚡ Confirm changes? Type <strong>yes</strong> or <strong>no</strong>
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: #e5e7eb;
+          border-radius: 20px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: #d1d5db;
+        }
+      `}</style>
     </div>
   );
 }

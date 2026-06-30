@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShoppingBag, DollarSign } from "lucide-react";
 
 export default function DashboardUI({ userId }: { userId: string }) {
   const [posList, setPosList] = useState<any[]>([]);
@@ -46,127 +47,175 @@ export default function DashboardUI({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
 
-      <h1 className="text-2xl font-bold mb-6">
-        My POS Dashboard
-      </h1>
+    <div className="p-6 max-w-6xl mx-auto">
+
+      {/* ✅ HEADER */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Manage your POS systems and track performance
+        </p>
+      </div>
 
       {/* ✅ EMPTY STATE */}
       {posList.length === 0 && (
-        <p className="text-gray-500">
-          No POS yet — create your first one 🚀
-        </p>
+        <div className="bg-white border rounded-2xl p-6 text-center shadow-sm">
+          <p className="text-gray-500">
+            No POS yet — create your first one 🚀
+          </p>
+        </div>
       )}
 
-      {posList.map((pos) => {
-        const orders = ordersMap[pos.id] || [];
+      {/* ✅ GRID */}
+      <div className="grid md:grid-cols-2 gap-6">
 
-        const totalRevenue = orders.reduce(
-          (sum: number, o: any) => sum + o.total,
-          0
-        );
+        {posList.map((pos) => {
+          const orders = ordersMap[pos.id] || [];
 
-        return (
-          <div
-            key={pos.id}
-            className="mb-6 border rounded p-4 bg-gray-50 shadow-sm"
-          >
-            {/* ✅ POS HEADER */}
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="font-bold text-lg">
-                {pos.name}
-              </h2>
+          const totalRevenue = orders.reduce(
+            (sum: number, o: any) => sum + o.total,
+            0
+          );
 
-              <button
-                onClick={() => router.push(`/pos?posId=${pos.id}`)}
-                className="text-sm bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
-              >
-                Open POS
-              </button>
-            </div>
+          return (
+            <div
+              key={pos.id}
+              className="relative bg-white border rounded-2xl p-5 shadow-sm transition-all duration-300
+                        hover:shadow-xl hover:-translate-y-1 
+                        before:absolute before:inset-0 before:rounded-2xl 
+                        before:opacity-0 hover:before:opacity-10
+                        before:bg-gradient-to-r before:from-purple-500 before:via-blue-500 before:to-indigo-500
+                        before:transition-all before:duration-300"
+            >
 
-            {/* ✅ STATS */}
-            <div className="text-sm text-gray-600 mb-3">
-              <p>Orders: {orders.length}</p>
-              <p>Total Revenue: {totalRevenue.toFixed(2)} TND</p>
-            </div>
+              {/* ✅ HEADER */}
+              <div className="flex justify-between items-center mb-5 relative z-10">
+                <h2 className="font-semibold text-lg">
+                  {pos.name}
+                </h2>
 
-            {/* ✅ ORDERS */}
-            <div>
-              {orders.length === 0 && (
-                <p className="text-sm text-gray-400">
-                  No orders yet
-                </p>
-              )}
-
-              {orders.map((order: any) => (
-                <div
-                  key={order.id}
-                  className="bg-white border p-2 mb-2 rounded text-sm"
+                <button
+                  onClick={() => router.push(`/pos?posId=${pos.id}`)}
+                  className="text-sm bg-black text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition"
                 >
-                  <p>
-                    <strong>Total:</strong> {order.total} TND
+                  Open
+                </button>
+              </div>
+
+              {/* ✅ STATS */}
+              <div className="flex justify-between mb-5 relative z-10">
+
+                {/* ORDERS */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <ShoppingBag size={16} className="text-gray-600" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-400">
+                      Orders
+                    </p>
+                    <p className="font-semibold text-sm">
+                      {orders.length}
+                    </p>
+                  </div>
+                </div>
+
+                {/* REVENUE */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <DollarSign size={16} className="text-gray-600" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-400">
+                      Revenue
+                    </p>
+                    <p className="font-semibold text-sm">
+                      {totalRevenue.toFixed(2)} TND
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ✅ RECENT ORDERS */}
+              <div className="space-y-2 relative z-10">
+
+                {orders.length === 0 && (
+                  <p className="text-xs text-gray-400">
+                    No orders yet
                   </p>
-                  <p>
-                    <strong>Status:</strong>{" "}
+                )}
+
+                {orders.slice(0, 3).map((order: any) => (
+                  <div
+                    key={order.id}
+                    className="flex justify-between items-center text-xs bg-gray-50 rounded-lg px-3 py-2"
+                  >
+                    <span>{order.total} TND</span>
+
                     <span
                       className={
                         order.status === "paid"
-                          ? "text-green-600"
-                          : "text-yellow-600"
+                          ? "text-green-600 font-medium"
+                          : "text-yellow-600 font-medium"
                       }
                     >
                       {order.status}
                     </span>
-                  </p>
+                  </div>
+                ))}
 
-                  {/* ✅ IMPROVED MARK AS PAID */}
-                  {order.status === "pending" && (
-                    <button
-                      disabled={updatingOrderId === order.id}
-                      onClick={async () => {
-                        try {
-                          setUpdatingOrderId(order.id);
+              </div>
 
-                          await fetch("/api/orders/update", {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              orderId: order.id,
-                            }),
-                          });
+              {/* ✅ QUICK ACTION */}
+              {orders.some((o: any) => o.status === "pending") && (
+                <button
+                  className="mt-4 w-full text-xs bg-green-600 text-white py-2 rounded-lg 
+                            hover:bg-green-700 transition disabled:opacity-50 relative z-10"
+                  disabled={!!updatingOrderId}
+                  onClick={async () => {
+                    try {
+                      const pending = orders.find((o: any) => o.status === "pending");
+                      if (!pending) return;
 
-                          // ✅ update UI instantly (NO reload)
-                          setOrdersMap((prev: any) => ({
-                            ...prev,
-                            [pos.id]: prev[pos.id].map((o: any) =>
-                              o.id === order.id
-                                ? { ...o, status: "paid" }
-                                : o
-                            ),
-                          }));
-                        } catch (err) {
-                          console.error(err);
-                        } finally {
-                          setUpdatingOrderId(null);
-                        }
-                      }}
-                      className="mt-1 text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50"
-                    >
-                      {updatingOrderId === order.id
-                        ? "Updating..."
-                        : "Mark as Paid"}
-                    </button>
-                  )}
-                </div>
-              ))}
+                      setUpdatingOrderId(pending.id);
+
+                      await fetch("/api/orders/update", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ orderId: pending.id }),
+                      });
+
+                      setOrdersMap((prev: any) => ({
+                        ...prev,
+                        [pos.id]: prev[pos.id].map((o: any) =>
+                          o.id === pending.id
+                            ? { ...o, status: "paid" }
+                            : o
+                        ),
+                      }))
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setUpdatingOrderId(null);
+                    }
+                  }}
+                >
+                  {updatingOrderId ? "Updating..." : "Mark one as Paid"}
+                </button>
+              )}
+
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+
+      </div>
+
     </div>
   );
 }

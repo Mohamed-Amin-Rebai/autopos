@@ -32,6 +32,11 @@ export default function AppPage() {
       }
 
       const result = await res.json();
+      
+      if (!res.ok || !result.posId) {
+        alert("AI is busy, try again");
+        return;
+      }
 
       // ✅ redirect immediately (we don’t need to mutate data here)
       window.location.href = `/pos?posId=${result.posId}`;

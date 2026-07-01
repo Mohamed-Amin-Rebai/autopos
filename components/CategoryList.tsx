@@ -1,4 +1,4 @@
-import { Grid3x3, ChevronRight, Tag } from "lucide-react";
+import { Grid3x3, ChevronRight } from "lucide-react";
 
 export default function CategoryList({
   categories,
@@ -8,7 +8,7 @@ export default function CategoryList({
   return (
     <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
       
-      {/* ✅ HEADER - Premium */}
+      {/* ✅ HEADER */}
       <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -24,7 +24,7 @@ export default function CategoryList({
       </div>
 
 
-      {/* ✅ LIST - Enhanced */}
+      {/* ✅ LIST */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
         {categories.map((cat: string) => {
           const isActive = selected === cat;
@@ -56,23 +56,6 @@ export default function CategoryList({
           );
         })}
       </div>
-
-      {/* Custom scrollbar styles */}
-      <style jsx>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #e5e7eb;
-          border-radius: 20px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #d1d5db;
-        }
-      `}</style>
     </div>
   );
 }

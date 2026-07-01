@@ -26,19 +26,27 @@ model POS {
   data      Json
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+}
+
+enum OrderStatus {
+  pending
+  paid
+  failed
 }
 
 model Order {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String   @db.ObjectId
-  posId            String   @db.ObjectId
-  items            Json
-  total            Float
-  discount         Json
-  stripeSessionId  String
-  status           String
-  createdAt        DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  posId     String   @db.ObjectId
+  items     Json
+  total     Float
+  discount  Json
+  paymentDetails Json
+  status    OrderStatus @default(pending)
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+  pos  POS  @relation(fields: [posId], references: [id])
 }

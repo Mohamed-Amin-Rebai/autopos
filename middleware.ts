@@ -1,29 +1,3 @@
-// import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-
-// const isPublicRoute = createRouteMatcher([
-//   "/",
-//   "/sign-in(.*)",
-//   "/sign-up(.*)",
-// ]);
-
-// export default clerkMiddleware(async (auth, req) => {
-//   if (!isPublicRoute(req)) {
-//     const { userId } = await auth();
-
-//     if (!userId) {
-//       return Response.redirect(new URL("/sign-in", req.url));
-//     }
-//   }
-// });
-
-// export const config = {
-//   matcher: [
-//     "/((?!_next|.*\\..*).*)",
-//     "/api/(.*)",
-//   ],
-// };
-
-
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -33,12 +7,23 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // ✅ DO NOTHING FOR NOW
-});
+  const { userId } = await auth();
 
-export const config = {
-  matcher: [
-    "/((?!_next|.*\\..*).*)",
-    "/api/(.*)",
-  ],
-};
+  // ✅ protect private routes
+  if (!isPublicRoute(req)) {
+    if (!userId) {
+      return Response.redirect(new URL("/sign-in", req.url));
+    }
+  }
+
+  // ✅ admin protection
+  if (req.nextUrl.pathname.startsWith("/admin")) {
+    const { sessionClaims } = await auth();
+
+    const role = sessionClaims?.role;
+
+    if (role !== "admin") {
+      return Response.redirect(new URL("/dashboard", req.url));
+    }
+  }
+});

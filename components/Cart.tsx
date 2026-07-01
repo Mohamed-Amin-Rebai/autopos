@@ -3,6 +3,8 @@ import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Wallet, Banknote, X } fr
 
 export default function Cart({
   cart,
+  posId,
+  onClearCart,
   removeFromCart,
   increaseQty,
   decreaseQty,
@@ -12,6 +14,8 @@ export default function Cart({
   const [showPayment, setShowPayment] = useState(false);
   const [method, setMethod] = useState("cash");
   const [processing, setProcessing] = useState(false);
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber , setAccountNumber ] = useState("");
 
   const subtotal = cart.reduce(
     (sum: number, item: any) =>
@@ -30,26 +34,50 @@ export default function Cart({
   const total = subtotal - discountAmount;
 
   const handlePayment = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const posId = urlParams.get("posId");
+    if (!cart.length) {
+      alert("Cart is empty");
+      return;
+    }
+
+    if (!posId) {
+      alert("Missing POS ID");
+      return;
+    }
+
+    if (method === "bank") {
+      if (!accountName || !accountNumber) {
+        alert("Please fill bank details");
+        return;
+      }
+    }
+
 
     try {
       setProcessing(true);
 
-      await fetch("/api/checkout", {
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
           posId,
-          userId: "000000000000000000000000",
           discount: activeDiscount,
           paymentMethod: method,
+          bankDetails: method === "bank"
+            ? { name: accountName, number: accountNumber }
+            : null
         }),
       });
 
+      if (!res.ok) {
+        throw new Error("Failed");
+      }
+
       alert("✅ Order created successfully");
+      setAccountName("");
+      setAccountNumber("");
       setShowPayment(false);
+      onClearCart();
 
     } catch {
       alert("❌ Error");
@@ -61,7 +89,7 @@ export default function Cart({
   return (
     <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
 
-      {/* ✅ HEADER - Premium */}
+      {/* ✅ HEADER */}
       <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -265,12 +293,16 @@ export default function Cart({
                 className="w-full border border-gray-200 rounded-xl p-2.5 text-sm 
                            focus:outline-none focus:ring-2 focus:ring-indigo-500/50 
                            focus:border-indigo-500 transition-all"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
               />
               <input
                 placeholder="Account Holder Name"
                 className="w-full border border-gray-200 rounded-xl p-2.5 text-sm 
                            focus:outline-none focus:ring-2 focus:ring-indigo-500/50 
-                           focus:border-indigo-500 transition-all"
+                           focus:border-indigo-500 transition-all"               
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
               />
             </div>
           )}

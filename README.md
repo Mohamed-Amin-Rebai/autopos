@@ -113,7 +113,6 @@ This prevents unwanted modifications.
 
 ### 🖼️ Image Support
 - Upload custom:
-  - Logos
   - Product images
 - Dynamically rendered in UI
 
@@ -270,7 +269,6 @@ User action → API → DB → Dashboard
 
 ```json
 {
-  "logo": "Tech Store",
   "categories": ["Computers", "Accessories"],
   "products": [
     {

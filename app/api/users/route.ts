@@ -19,12 +19,16 @@ export async function GET() {
         id: true,
         email: true,
         name: true,
+        role: true,
       },
     });
 
     return NextResponse.json(users);
   } catch (err) {
     console.error("❌ Users fetch error:", err);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
+      { status: 500 }
+    );
   }
 }

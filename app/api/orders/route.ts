@@ -13,16 +13,25 @@ export async function GET(req: Request) {
       );
     }
 
+    const pos = await prisma.pOS.findUnique({
+      where: {
+        id: posId,
+      },
+    });
+
+    if (!pos) {
+      return NextResponse.json(
+        { error: "POS not found" },
+        { status: 404 }
+      );
+    }
+
     const orders = await prisma.order.findMany({
       where: {
         posId: posId,
       },
       orderBy: { createdAt: "desc" },
     });
-
-    if (!orders) {
-      return NextResponse.json([]);
-    }
 
     return NextResponse.json(orders);
   } catch (err) {

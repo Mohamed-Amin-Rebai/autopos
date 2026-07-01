@@ -2,59 +2,37 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
-import { LayoutDashboard, Shield } from "lucide-react";
+import { LayoutDashboard, Shield, ShoppingBag } from "lucide-react";
 
-export default function Header() {
+export default function Header({ role }: { role: string }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loadingRole, setLoadingRole] = useState(true);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      try {
-        const res = await fetch("/api/me");
-        const data = await res.json();
-
-        if (data.role === "admin") {
-          setIsAdmin(true);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingRole(false);
-      }
-    };
-
-    fetchRole();
-  }, []);
-
-  // ✅ hide header on landing
-  if (pathname === "/") return null;
+  const isAdmin = role === "admin";
 
   // ✅ helper for active styling
-  const isActive = (route: string) =>
-    pathname.startsWith(route);
+  const isActive = (route: string) => pathname === route;
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/60 shadow-sm">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm">
 
-      <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center px-4 md:px-8 py-4 max-w-7xl mx-auto">
 
         {/* LOGO */}
         <div 
-          onClick={() => router.push("/app")}
+          onClick={() => router.push("/")}
           className="flex items-center gap-2.5 cursor-pointer group"
-        > 
-          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent group-hover:opacity-80 transition">
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
+            <ShoppingBag className="w-4 h-4 text-white" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent group-hover:opacity-80 transition">
             AutoPOS
           </h1>
         </div>
 
         {/* NAV - Enhanced */}
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-3 text-sm">
 
           {/* DASHBOARD */}
           <button
@@ -77,7 +55,7 @@ export default function Header() {
           </button>
 
           {/* ADMIN */}
-          {!loadingRole && isAdmin && (
+          {isAdmin && (
             <button
               onClick={() => router.push("/admin")}
               className={`
@@ -99,7 +77,7 @@ export default function Header() {
           )}
 
           {/* DIVIDER */}
-          <div className="w-px h-8 bg-gray-200" />
+          <div className="w-px h-8 bg-gray-200 mx-1" />
 
           {/* USER */}
           <div className="flex items-center p-1 rounded-lg hover:bg-gray-100 transition">

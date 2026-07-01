@@ -4,12 +4,19 @@ export type Product = {
   price: number;
   category: string;
   brand?: string;
+  image?: string;
   attributes?: Record<string, any>;
 };
 
+export type Discount = {
+  name: string;
+  value: number;
+  active: boolean;
+};
+
 export type POSData = {
-  logo: string;
   categories: string[];
   products: Product[];
+  discounts?: Discount[];
   actions: string[];
 };

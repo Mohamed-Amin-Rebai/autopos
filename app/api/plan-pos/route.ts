@@ -4,6 +4,13 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { instruction } = body;
 
+  if (!instruction?.trim()) {
+    return NextResponse.json(
+      { error: "Instruction required" },
+      { status: 400 }
+    );
+  }
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -56,9 +63,12 @@ User instruction:
       }
     );
 
+    if (!response.ok) {
+      throw new Error("Gemini request failed");
+    }
+
     const data = await response.json();
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     return NextResponse.json({ message: text });
   } catch (err) {

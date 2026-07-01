@@ -21,7 +21,7 @@ export default function ProductGrid({
       `}
     >
 
-      {/* ✅ EMPTY STATE - Enhanced */}
+      {/* ✅ EMPTY STATE */}
       {displayedProducts.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-400">
           <PackageIcon className="w-16 h-16 mb-4 text-gray-300" />
@@ -43,7 +43,7 @@ export default function ProductGrid({
                      hover:shadow-xl hover:-translate-y-1.5 hover:border-indigo-200/80"
         >
 
-          {/* ✅ IMAGE - Enhanced */}
+          {/* ✅ IMAGE */}
           <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50">
             {p.image ? (
               <img
@@ -59,7 +59,7 @@ export default function ProductGrid({
             )}
           </div>
 
-          {/* ✅ CONTENT - Enhanced */}
+          {/* ✅ CONTENT  */}
           <div className="flex flex-col flex-1 space-y-2">
 
             {/* NAME */}
@@ -83,7 +83,7 @@ export default function ProductGrid({
             {/* ✅ ATTRIBUTES - As chips */}
             {p.attributes && Object.keys(p.attributes).length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
-                {Object.entries(p.attributes)
+                {Object.entries(p.attributes || {})
                   .slice(0, 2)
                   .map(([k, v]) => (
                     <span key={k} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -98,7 +98,7 @@ export default function ProductGrid({
 
           </div>
 
-          {/* ✅ CTA BUTTON - Enhanced */}
+          {/* ✅ CTA BUTTON  */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -107,7 +107,7 @@ export default function ProductGrid({
             className="mt-4 w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white 
                        py-2.5 rounded-xl text-sm font-medium 
                        transition-all duration-200 
-                       hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02] 
+                       hover:shadow-lg hover:shadow-indigo-500/25  
                        active:scale-[0.98]"
           >
             Add to Cart

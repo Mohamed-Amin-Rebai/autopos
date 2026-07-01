@@ -6,6 +6,21 @@ export async function POST(req: Request) {
   const body = await req.json();
   const prompt = body.prompt;
 
+  if (!prompt?.trim()) {
+    return NextResponse.json(
+      { error: "Prompt required" },
+      { status: 400 }
+    );
+  }
+
+  const dbUser = await getOrCreateUser();
+  if (!dbUser) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -27,7 +42,6 @@ Return ONLY valid JSON.
 Structure:
 
 {
-  "logo": "",
   "categories": [],  // optional
   "products": [
     {
@@ -42,8 +56,7 @@ Structure:
   "discounts": [
     { "name": "Default", "value": 10, "active": true },
     { "name": "Black Friday", "value": 50, "active": false }
-  ],
-  "actions": []
+  ]
 }
 
 Rules:
@@ -51,8 +64,6 @@ Rules:
 GENERAL:
 - Adapt to the business type
 - Always generate realistic and relevant products
-- Always include actions:
-  ["add_to_cart", "apply_discount", "checkout"]
 
 - Include discount system:
 "discounts": [
@@ -111,21 +122,28 @@ ${prompt}
       }
     );
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error("Gemini request failed");
+    }
 
+    const data = await response.json();
     console.log("FULL GEMINI RESPONSE:", data);
 
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
     console.log("RAW TEXT:", text);
 
     // ✅ fallback if empty
     if (!text) {
       return NextResponse.json({
-        logo: "Default Store",
         categories: ["Default"],
-        products: [],
-        actions: ["add_to_cart", "checkout"],
+        products: [],      
+        discounts: [
+          {
+            name: "Default",
+            value: 10,
+            active: true,
+          },
+        ],
       });
     }
 
@@ -135,18 +153,12 @@ ${prompt}
     try {
       const json = JSON.parse(text);
 
-      const dbUser = await getOrCreateUser();
-      if (!dbUser) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      const userId = dbUser.id;
-
       let created;
       try {
         created = await prisma.pOS.create({
           data: {
-            userId,
-            name: prompt,
+            userId: dbUser.id,
+            name: prompt.slice(0, 50),
             data: {
               current: json,
               history: [
@@ -173,20 +185,27 @@ ${prompt}
       console.error("INVALID JSON:", text);
 
       return NextResponse.json({
-        logo: "Fallback Store",
         categories: ["General"],
         products: [],
-        actions: ["add_to_cart", "checkout"],
+        discounts: [
+          {
+            name: "Default",
+            value: 10,
+            active: true,
+          },
+        ],
       });
     }
   } catch (error) {
     console.error("API ERROR:", error);
 
-    return NextResponse.json({
-      logo: "Error Store",
-      categories: ["Error"],
-      products: [],
-      actions: ["add_to_cart"],
-    });
+    return NextResponse.json(
+      {
+        error: "Failed to generate POS",
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

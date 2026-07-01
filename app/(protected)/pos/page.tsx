@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
@@ -13,45 +13,55 @@ import {
   Download,
   Save,
   Loader2,
-  Sparkles
 } from "lucide-react";
 
 export default function POSPage() {
+
+  type CartItem = {
+    product: any;
+    quantity: number;
+  };
+
   const [data, setData] = useState<POSData | null>(null);
   const [historyFromDB, setHistoryFromDB] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving , setIsSaving] = useState(false);
 
   const router = useRouter();
 
   // ✅ get posId
-  const urlParams = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search)
-    : null;
-  const posId = urlParams?.get("posId");
+  const searchParams = useSearchParams();
+  const posId = searchParams.get("posId");
+
+  const loadPOS = async () => {
+    if (!posId) {
+      router.push("/");
+      return null;
+    }
+    const res = await fetch(`/api/pos?posId=${posId}`);
+    if (!res.ok) throw new Error("Failed to fetch POS");
+    const response = await res.json();
+
+    setData(response.current);
+    setHistoryFromDB(response.history || []);
+
+    if (response.current.categories?.length) {
+      setSelectedCategory(response.current.categories[0]);
+    }
+    
+    return response;
+  }
 
   useEffect(() => {
     const fetchPOS = async () => {
       try {
-        if (!posId) return;
-
         setLoading(true);
-
-        const res = await fetch(`/api/pos?posId=${posId}`);
-        const response = await res.json();
-
-        if (response) {
-          setData(response.current);
-          setHistoryFromDB(response.history || []);
-
-          if (response.current.categories?.length > 0) {
-            setSelectedCategory(response.current.categories[0]);
-          }
-        }
+        await loadPOS();
       } catch (err) {
         console.error(err);
+        router.push("/");
       } finally {
         setLoading(false);
       }
@@ -118,23 +128,19 @@ export default function POSPage() {
 
   const increaseQty = (id: number) => {
     setCart(
-      cart.map((item) =>
-        item.product.id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
+      cart.map((item) => item.product.id === id
+        ? { ...item, quantity: item.quantity + 1 }
+        : item
       )
     );
   };
 
   const decreaseQty = (id: number) => {
     setCart(
-      cart
-        .map((item) =>
-          item.product.id === id
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
+      cart.map((item) => item.product.id === id
+        ? { ...item, quantity: item.quantity - 1 }
+        : item
+      ).filter((item) => item.quantity > 0)
     );
   };
 
@@ -161,8 +167,11 @@ export default function POSPage() {
       alert("Missing POS ID");
       return;
     }
+
     try {
-      await fetch("/api/pos/update", {
+      setIsSaving(true);
+
+      const res = await fetch("/api/pos/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -173,23 +182,31 @@ export default function POSPage() {
         }),
       });
 
-      // ✅ refresh from DB after save
-      const res = await fetch(`/api/pos?posId=${posId}`);
-      const updated = await res.json();
+      if (!res.ok) {
+        throw new Error("Save failed");
+      }
 
-      setData(updated.current);
-      setHistoryFromDB(updated.history);
+      const updated = await loadPOS();
+      if (!updated) {
+        alert("❌ Failed to refresh POS after save");
+        return;
+      }
 
       alert("✅ POS saved successfully");
+
     } catch (err) {
+      console.error(err);
       alert("❌ Failed to save POS");
+    } finally {
+      setIsSaving(false);
     }
   };
+
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col">
 
-      {/* ✅ TOP BAR - Premium */}
+      {/* ✅ TOP BAR */}
       <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
 
@@ -263,6 +280,8 @@ export default function POSPage() {
           <div className="w-[340px] flex-shrink-0">
             <Cart
               cart={cart}
+              posId={posId}
+              onClearCart={() => setCart([])}
               removeFromCart={removeFromCart}
               increaseQty={increaseQty}
               decreaseQty={decreaseQty}
@@ -273,35 +292,16 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* ✅ CHAT BELOW - Premium */}
+      {/* ✅ CHAT */}
       <div className="max-w-7xl mx-auto w-full p-4 pt-0">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
-          <div className="p-4">
-            <ChatPanel
-              data={data}
-              historyFromDB={historyFromDB}
-              onUpdate={(newData: POSData) => setData(newData)}
-            />
-          </div>
+          <ChatPanel
+            data={data}
+            historyFromDB={historyFromDB}
+            onUpdate={(newData: POSData) => setData(newData)}
+          />
         </div>
       </div>
-
-      {/* Custom scrollbar styles */}
-      <style jsx>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #e5e7eb;
-          border-radius: 20px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #d1d5db;
-        }
-      `}</style>
     </main>
   );
 }

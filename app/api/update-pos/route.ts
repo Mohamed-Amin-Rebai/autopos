@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const body = await req.json();
 
+  const body = await req.json();
   const { currentData, instruction } = body;
+
+  if (!currentData || typeof currentData !== "object") {
+    return NextResponse.json(
+      { error: "Current data is required and must be an object" },
+      { status: 400 }
+    );
+  }
+
+  if (!instruction?.trim()) {
+    return NextResponse.json(
+      { error: "Instruction required" },
+      { status: 400 }
+    );
+  }
 
   try {
     const response = await fetch(
@@ -24,7 +38,6 @@ You are an AI POS system editor.
 Your task is to MODIFY the given JSON strictly according to the user instruction.
 
 CRITICAL RULES:
-
 - You MUST apply the requested change
 - If a product is mentioned, you MUST find it by name and modify it
 - Do NOT ignore the instruction
@@ -32,8 +45,12 @@ CRITICAL RULES:
 - Always return FULL JSON
 - Keep structure EXACT
 - Do NOT remove fields
+- Do not wrap JSON in explanations
+- Do not add comments
+- Do not add markdown
 
-- Categories, products and actions must remain valid arrays
+
+- Categories, products must remain valid arrays
 - Product ids must stay unique
 
 - If modifying price:
@@ -89,10 +106,12 @@ User instruction:
       }
     );
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error("Gemini request failed");
+    }
 
-    let text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const data = await response.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
     if (!text) {
       return NextResponse.json(currentData);
@@ -102,16 +121,24 @@ User instruction:
     text = text.replace(/```json|```/g, "").trim();
 
     try {
+
       const json = JSON.parse(text);
+      if (!json.products || !Array.isArray(json.products)) {
+        throw new Error("Invalid structure");
+      }
       return NextResponse.json(json);
+
     } catch {
+
       console.error("INVALID JSON:", text);
+      return NextResponse.json(currentData);
 
-      return NextResponse.json(currentData); // fallback
     }
-  } catch (error) {
-    console.error("API ERROR:", error);
 
-    return NextResponse.json(currentData); // fallback
+  } catch (error) {
+
+    console.error("API ERROR:", error);
+    return NextResponse.json(currentData);
+    
   }
 }

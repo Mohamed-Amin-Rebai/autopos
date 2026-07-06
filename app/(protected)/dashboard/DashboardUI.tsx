@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, DollarSign, Package, Clock, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { ShoppingBag, DollarSign, Package, Clock, CheckCircle, ArrowRight, Loader2, Users } from "lucide-react";
 
 export default function DashboardUI({ userId }: { userId: string }) {
   const [posList, setPosList] = useState<any[]>([]);
@@ -76,7 +76,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
             </h1>
             <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Manage your POS systems and track performance
+              Manage your POS systems and Cashiers in one place
             </p>
           </div>
           {posList.length > 0 && (
@@ -163,29 +163,12 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </button>
 
-                  {/* to improve after */}
                   <button
-                    onClick={async () => {
-                      const count = prompt("How many cashiers?");
-
-                      if (!count) return;
-
-                      await fetch("/api/cashier-requests", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          posId: pos.id,
-                          requestedCashiers: Number(count),
-                        }),
-                      });
-
-                      alert("✅ Request submitted");
-                    }}
-                    className="mt-2 text-xs bg-violet-600 text-white px-3 py-2 rounded-lg"
+                    onClick={() => router.push(`/request-cashiers/${pos.id}`)}
+                    className="group/btn text-sm bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-2 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 flex items-center gap-1"
                   >
                     Request Cashiers
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </button>
 
                 </div>
@@ -335,26 +318,68 @@ export default function DashboardUI({ userId }: { userId: string }) {
                   </button>
                 )}
 
-                <div className="mt-4">
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                    Cashiers
-                  </p>
+                {/* ✅ CASHIERS */}
+                <div className="mt-4 relative z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      Cashiers
+                    </p>
+                    {cashiers.length > 0 && (
+                      <span className="text-[10px] text-violet-600 font-medium">
+                        {cashiers.length} active
+                      </span>
+                    )}
+                  </div>
 
                   {cashiers.length === 0 ? (
-                    <p className="text-xs text-gray-400">
-                      No cashiers assigned
-                    </p>
+                    <div className="text-center py-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-1.5">
+                        <Users className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-gray-400">No cashiers assigned</p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {cashiers.map((cashier: any) => (
                         <div
                           key={cashier.id}
-                          className="text-xs bg-gray-50 px-3 py-2 rounded-lg"
+                          className="group/cashier bg-gradient-to-br from-gray-50 to-white rounded-xl p-3 border border-gray-200/50 hover:border-violet-200/50 transition-all duration-200 hover:shadow-md"
                         >
-                          <p>{cashier.username}</p>
-                          <p className="text-gray-500">
-                            Opening Cash: {cashier.openingCash} TND
-                          </p>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                                <span className="text-xs font-semibold text-violet-700">
+                                  {cashier.username?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-gray-800">
+                                  {cashier.username}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {cashier.shiftStart}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">→</span>
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {cashier.shiftEnd}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <p className="text-[10px] text-gray-400">Opening Cash</p>
+                                <p className="text-xs font-semibold text-emerald-600">
+                                  {cashier.openingCash} TND
+                                </p>
+                              </div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

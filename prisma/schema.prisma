@@ -63,6 +63,8 @@ model Cashier {
   fullName String?
 
   openingCash Float
+  shiftStart String?
+  shiftEnd String?
 
   isActive Boolean @default(true)
 
@@ -76,6 +78,7 @@ model CashierRequest {
   posId   String @db.ObjectId
 
   requestedCashiers Int
+  cashierConfigs Json
 
   status String @default("pending")
 

@@ -43,15 +43,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const cashiers = [];
+    // count existing cashiers for the POS to generate unique usernames
+    const existingCashiersCount = await prisma.cashier.count({
+      where: {
+        posId: request.posId,
+      },
+    });
 
-    for (let i = 1; i <= request.requestedCashiers; i++) {
+    const cashiers = [];
+    const configs = request.cashierConfigs as any[];
+
+    for (let i = 0; i < configs.length; i++) {
+      const config = configs[i];
       const cashier = await prisma.cashier.create({
         data: {
           posId: request.posId,
-          username: `cashier_${request.posId}_${i}`,
+          username: `cashier_${request.posId}_${existingCashiersCount + i + 1}`,
           passwordHash: "temp123",
-          openingCash: 100,
+          openingCash: config.openingCash,
+          shiftStart: config.shiftStart,
+          shiftEnd: config.shiftEnd,
         },
       });
 
@@ -59,6 +70,9 @@ export async function POST(req: Request) {
         id: cashier.id,
         username: cashier.username,
         password: "temp123",
+        openingCash: cashier.openingCash,
+        shiftStart: cashier.shiftStart,
+        shiftEnd: cashier.shiftEnd,
       });
     }
 

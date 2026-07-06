@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     const {
       posId,
       requestedCashiers,
+      cashierConfigs,
     } = body;
 
     if (!posId) {
@@ -27,12 +28,16 @@ export async function POST(req: Request) {
       );
     }
 
-    if (
-      !requestedCashiers ||
-      requestedCashiers < 1
-    ) {
+    if (!requestedCashiers || requestedCashiers < 1) {
       return NextResponse.json(
         { error: "Invalid cashier count" },
+        { status: 400 }
+      );
+    }
+
+    if (!cashierConfigs || !Array.isArray(cashierConfigs) || cashierConfigs.length !== requestedCashiers) {
+      return NextResponse.json(
+        { error: "Invalid cashier configuration" },
         { status: 400 }
       );
     }
@@ -63,6 +68,7 @@ export async function POST(req: Request) {
         ownerId: user.id,
         posId,
         requestedCashiers,
+        cashierConfigs,
       },
     });
 

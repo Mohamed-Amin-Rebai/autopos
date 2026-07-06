@@ -2,12 +2,15 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, Shield, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Shield, ShoppingBag, BarChart3 } from "lucide-react";
 
 export default function Header({ role }: { role: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const isAdmin = role === "admin";
+  if (pathname.startsWith("/cashier")) {
+    return null;
+  }
 
   // ✅ helper for active styling
   const isActive = (route: string) => pathname === route;
@@ -32,6 +35,33 @@ export default function Header({ role }: { role: string }) {
 
         {/* NAV - Enhanced */}
         <div className="flex items-center gap-3 text-sm">
+
+          {/* ANALYTICS */}
+          <button
+            onClick={() => router.push("/analytics")}
+            className={`
+              group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200
+              ${isActive("/analytics")
+                ? "bg-indigo-50 text-indigo-700 font-semibold shadow-sm"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              }
+            `}
+          >
+            <BarChart3
+              size={16}
+              className={
+                isActive("/analytics")
+                  ? "text-indigo-600"
+                  : "text-gray-400 group-hover:text-gray-600"
+              }
+            />
+
+            <span>Dashboard</span>
+
+            {isActive("/analytics") && (
+              <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full ml-1" />
+            )}
+          </button>
 
           {/* DASHBOARD */}
           <button

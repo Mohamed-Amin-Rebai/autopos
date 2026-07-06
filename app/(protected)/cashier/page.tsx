@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams} from "next/navigation";
@@ -6,7 +6,7 @@ import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
 import { POSData } from "@/lib/types";
-import {Loader2 , LogOut} from "lucide-react";
+import {Loader2, LogOut, User, DollarSign} from "lucide-react";
 
 export default function CashierPage() {
 
@@ -65,9 +65,9 @@ export default function CashierPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+          <Loader2 className="w-12 h-12 text-violet-600 animate-spin" />
           <p className="text-gray-600 font-medium">Loading Cashier Page...</p>
         </div>
       </div>
@@ -76,16 +76,16 @@ export default function CashierPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🔍</span>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md text-center border border-gray-200/50">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🔍</span>
           </div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">No Data Found</h2>
-          <p className="text-gray-600 mb-4">Go back and find an available cashier.</p>
+          <p className="text-gray-500 mb-6">Go back and find an available cashier.</p>
           <button
             onClick={() => router.push("/welcome")}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all hover:scale-105"
           >
             Go Home
           </button>
@@ -137,32 +137,45 @@ export default function CashierPage() {
     );
   };
 
-  
-
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col p-4 md:p-6">
 
-      <div className="bg-white border rounded-xl p-4 mb-4 flex justify-between items-center">
-        <div>
-          <p className="font-semibold">
-            Cashier: {cashier?.username}
-          </p>
+      {/* ✅ Cashier Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-4 md:p-5 mb-6 hover:shadow-md transition-shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Cashier</p>
+              <p className="font-semibold text-gray-900 text-lg">
+                {cashier?.username}
+              </p>
+            </div>
+          </div>
 
-          <p className="text-sm text-gray-500">
-            Opening Cash: {cashier?.openingCash} TND
-          </p>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-200/50">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <div>
+                <p className="text-xs text-gray-500">Opening Cash</p>
+                <p className="font-semibold text-emerald-700 text-sm">
+                  {cashier?.openingCash} TND
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push("/cashier/login")}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all hover:scale-105"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
-
-        <button
-          onClick={() => router.push("/cashier/login")}
-          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
       </div>
-
 
       {/* ✅ POS MAIN - Grid Layout */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AdminCashierRequests from "@/components/AdminCashierRequests";
 import { 
   Users, 
   ShoppingBag, 
@@ -409,6 +410,9 @@ export default function AdminUI() {
 
         </div>
       </div>
+
+      {/* ✅ CASHIER REQUESTS */}
+      <AdminCashierRequests />
 
       {/* ✅ GLOBAL LOADING */}
       {loading && (

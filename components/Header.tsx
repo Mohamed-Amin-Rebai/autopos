@@ -7,7 +7,6 @@ import { LayoutDashboard, Shield, ShoppingBag } from "lucide-react";
 export default function Header({ role }: { role: string }) {
   const router = useRouter();
   const pathname = usePathname();
-
   const isAdmin = role === "admin";
 
   // ✅ helper for active styling
@@ -20,7 +19,7 @@ export default function Header({ role }: { role: string }) {
 
         {/* LOGO */}
         <div 
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/welcome")}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
@@ -48,7 +47,7 @@ export default function Header({ role }: { role: string }) {
             <LayoutDashboard size={16} className={`
               ${isActive("/dashboard") ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"}
             `} />
-            <span>Dashboard</span>
+            <span>POS</span>
             {isActive("/dashboard") && (
               <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full ml-1" />
             )}

@@ -9,6 +9,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
   const [ordersMap, setOrdersMap] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [cashiersMap, setCashiersMap] = useState<Record<string, any[]>>({});
 
   const router = useRouter();
 
@@ -29,10 +30,19 @@ export default function DashboardUI({ userId }: { userId: string }) {
             return [pos.id, orders];
           })
         );
-
         setOrdersMap(Object.fromEntries(ordersEntries));
+
+        const cashierEntries = await Promise.all(
+          data.map(async (pos: any) => {
+            const res = await fetch(`/api/cashiers?posId=${pos.id}`);
+            const cashiers = await res.json();
+            return [pos.id, cashiers];
+          })
+        );
+        setCashiersMap(Object.fromEntries(cashierEntries));
+
       } catch (err) {
-        console.error("Dashboard load error:", err);
+        console.error("POS Systems load error:", err);
       } finally {
         setLoading(false);
       }
@@ -47,7 +57,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+          <p className="text-gray-600 font-medium">Loading your POS Systems...</p>
         </div>
       </div>
     );
@@ -62,7 +72,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent tracking-tight">
-              Dashboard
+              My POS Systems
             </h1>
             <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -107,7 +117,11 @@ export default function DashboardUI({ userId }: { userId: string }) {
         <div className="grid md:grid-cols-2 gap-6">
 
           {posList.map((pos) => {
-            const orders = ordersMap[pos.id] || [];
+            // const orders = ordersMap[pos.id] || [];
+            const orders = Array.isArray(ordersMap[pos.id])
+              ? ordersMap[pos.id]
+              : [];
+            const cashiers = cashiersMap[pos.id] || [];
 
             const totalRevenue = orders.reduce(
               (sum: number, o: any) => sum + o.total,
@@ -148,6 +162,32 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     Open
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </button>
+
+                  {/* to improve after */}
+                  <button
+                    onClick={async () => {
+                      const count = prompt("How many cashiers?");
+
+                      if (!count) return;
+
+                      await fetch("/api/cashier-requests", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          posId: pos.id,
+                          requestedCashiers: Number(count),
+                        }),
+                      });
+
+                      alert("✅ Request submitted");
+                    }}
+                    className="mt-2 text-xs bg-violet-600 text-white px-3 py-2 rounded-lg"
+                  >
+                    Request Cashiers
+                  </button>
+
                 </div>
 
                 {/* ✅ STATS */}
@@ -294,6 +334,32 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     )}
                   </button>
                 )}
+
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                    Cashiers
+                  </p>
+
+                  {cashiers.length === 0 ? (
+                    <p className="text-xs text-gray-400">
+                      No cashiers assigned
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {cashiers.map((cashier: any) => (
+                        <div
+                          key={cashier.id}
+                          className="text-xs bg-gray-50 px-3 py-2 rounded-lg"
+                        >
+                          <p>{cashier.username}</p>
+                          <p className="text-gray-500">
+                            Opening Cash: {cashier.openingCash} TND
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
               </div>
             );

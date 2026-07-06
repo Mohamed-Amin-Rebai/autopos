@@ -4,6 +4,7 @@ import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Wallet, Banknote, X } fr
 export default function Cart({
   cart,
   posId,
+  cashierId,
   onClearCart,
   removeFromCart,
   increaseQty,
@@ -61,6 +62,7 @@ export default function Cart({
         body: JSON.stringify({
           cart,
           posId,
+          cashierId,
           discount: activeDiscount,
           paymentMethod: method,
           bankDetails: method === "bank"

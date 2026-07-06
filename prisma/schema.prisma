@@ -37,16 +37,47 @@ enum OrderStatus {
 }
 
 model Order {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  posId     String   @db.ObjectId
-  items     Json
-  total     Float
-  discount  Json
-  paymentDetails Json
-  status    OrderStatus @default(pending)
-  createdAt DateTime @default(now())
-
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String      @db.ObjectId
+  posId          String      @db.ObjectId
+  cashierId      String?     @db.ObjectId
+  items          Json
+  total          Float
+  discount       Json?
+  paymentDetails Json?
+  status         OrderStatus @default(pending)
+  createdAt      DateTime    @default(now())
+  
   user User @relation(fields: [userId], references: [id])
   pos  POS  @relation(fields: [posId], references: [id])
+}
+
+model Cashier {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  posId String @db.ObjectId
+
+  username     String @unique
+  passwordHash String
+
+  fullName String?
+
+  openingCash Float
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model CashierRequest {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  ownerId String @db.ObjectId
+  posId   String @db.ObjectId
+
+  requestedCashiers Int
+
+  status String @default("pending")
+
+  createdAt DateTime @default(now())
 }

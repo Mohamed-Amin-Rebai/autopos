@@ -12,6 +12,7 @@ export async function POST(req: Request) {
       discount,
       paymentMethod,
       bankDetails,
+      cashierId,
     } = body;
 
     //  get user from server
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
       data: {
         userId,
         posId,
+        cashierId: cashierId || null,
         items: cart,
         total,
         discount,

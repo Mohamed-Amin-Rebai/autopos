@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AutoPOS",
-  description: "AI-powered POS Generator"
+  description: "AI-powered POS Generator",
+  icons: {
+      icon: "/favicon.jpg",
+  },
 };
 
 export default async function RootLayout({
@@ -28,6 +31,7 @@ export default async function RootLayout({
       <html
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        suppressHydrationWarning
       >
         <body className="min-h-full flex flex-col">
           {children}

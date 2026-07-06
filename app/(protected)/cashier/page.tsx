@@ -1,21 +1,14 @@
-"use client";
+"use client"
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
-import ChatPanel from "@/components/ChatPanel";
 import { POSData } from "@/lib/types";
+import {Loader2 , LogOut} from "lucide-react";
 
-import {
-  ArrowLeft,
-  Download,
-  Save,
-  Loader2,
-} from "lucide-react";
-
-export default function POSPage() {
+export default function CashierPage() {
 
   type CartItem = {
     product: any;
@@ -23,33 +16,32 @@ export default function POSPage() {
   };
 
   const [data, setData] = useState<POSData | null>(null);
-  const [historyFromDB, setHistoryFromDB] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [posId, setPosId] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isSaving , setIsSaving] = useState(false);
-
+  const [cashier, setCashier] = useState<any>(null);
   const router = useRouter();
 
-  // ✅ get posId
+  // ✅ get cashierid
   const searchParams = useSearchParams();
-  const posId = searchParams.get("posId");
+  const cashierId = searchParams.get("cashierId");
 
   const loadPOS = async () => {
-    if (!posId) {
-      router.push("/");
+    if (!cashierId) {
+      router.push("/welcome");
       return null;
     }
-    const res = await fetch(`/api/pos?posId=${posId}`);
+    const res = await fetch(`/api/cashier/${cashierId}`);
     if (!res.ok) throw new Error("Failed to fetch POS");
     const response = await res.json();
 
-    console.log(response);
-    setData(response.current);
-    setHistoryFromDB(response.history || []);
+    setPosId(response.cashier.posId);
+    setCashier(response.cashier);
+    setData(response.pos.current);
 
-    if (response.current.categories?.length) {
-      setSelectedCategory(response.current.categories[0]);
+    if (response.pos.current.categories?.length) {
+      setSelectedCategory(response.pos.current.categories[0]);
     }
     
     return response;
@@ -69,14 +61,14 @@ export default function POSPage() {
     };
 
     fetchPOS();
-  }, [posId]);
+  }, [cashierId]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-          <p className="text-gray-600 font-medium">Loading POS system...</p>
+          <p className="text-gray-600 font-medium">Loading Cashier Page...</p>
         </div>
       </div>
     );
@@ -90,9 +82,9 @@ export default function POSPage() {
             <span className="text-2xl">🔍</span>
           </div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">No Data Found</h2>
-          <p className="text-gray-600 mb-4">Go back and generate a new POS configuration.</p>
+          <p className="text-gray-600 mb-4">Go back and find an available cashier.</p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/welcome")}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Go Home
@@ -145,112 +137,32 @@ export default function POSPage() {
     );
   };
 
-  const goBack = () => {
-    router.push("/");
-  };
-
-  const exportJson = () => {
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = "pos-config.json";
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSave = async () => {
-    if (!posId) {
-      alert("Missing POS ID");
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      const res = await fetch("/api/pos/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          data,
-          posId,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Save failed");
-      }
-
-      const updated = await loadPOS();
-      if (!updated) {
-        alert("❌ Failed to refresh POS after save");
-        return;
-      }
-
-      alert("✅ POS saved successfully");
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to save POS");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  
 
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col">
 
-      {/* ✅ TOP BAR */}
-      <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border rounded-xl p-4 mb-4 flex justify-between items-center">
+        <div>
+          <p className="font-semibold">
+            Cashier: {cashier?.username}
+          </p>
 
-          <button
-            onClick={goBack}
-            className="group flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-all hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-
-          <div className="w-px h-6 bg-gray-200" />
-
-          <button
-            onClick={exportJson}
-            className="group flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-all hover:bg-gray-100 rounded-lg"
-          >
-            <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
-            <span className="text-sm font-medium">Export</span>
-          </button>
-
-          <div className="w-px h-6 bg-gray-200" />
-          
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="group flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-all hover:bg-gray-100 rounded-lg"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Save POS</span>
-              </>
-            )}
-          </button>
-
+          <p className="text-sm text-gray-500">
+            Opening Cash: {cashier?.openingCash} TND
+          </p>
         </div>
+
+        <button
+          onClick={() => router.push("/cashier/login")}
+          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
       </div>
+
 
       {/* ✅ POS MAIN - Grid Layout */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4">
@@ -281,6 +193,7 @@ export default function POSPage() {
           <div className="w-[340px] flex-shrink-0">
             <Cart
               cart={cart}
+              cashierId={cashierId || undefined}
               posId={posId}
               onClearCart={() => setCart([])}
               removeFromCart={removeFromCart}
@@ -293,16 +206,6 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* ✅ CHAT */}
-      <div className="max-w-7xl mx-auto w-full p-4 pt-0">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
-          <ChatPanel
-            data={data}
-            historyFromDB={historyFromDB}
-            onUpdate={(newData: POSData) => setData(newData)}
-          />
-        </div>
-      </div>
     </main>
   );
 }

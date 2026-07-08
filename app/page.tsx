@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter , usePathname } from "next/navigation";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { 
   ArrowRight, 
   Sparkles, 
   Zap,
-  LayoutDashboard,
   BarChart3, 
   ShoppingBag, 
   CheckCircle,
@@ -16,19 +15,9 @@ import {
 export default function Home() {
   const router = useRouter();
   const { isSignedIn } = useUser();
-  const pathname = usePathname();
 
   const goToSignup = () => router.push("/sign-up");
-  const goToSignin = () => router.push("/sign-in");
   const goToApp = () => router.push("/welcome");
-  const goToDashboard = () => router.push("/dashboard");
-  const goToLogo = () => {
-    if (isSignedIn) {
-      router.push("/welcome");
-    } else {
-      router.push("/sign-up");
-    }
-  };
 
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 500], [0, 150]);
@@ -65,74 +54,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white relative overflow-x-hidden">
-
-      {/* 🌟 HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-4 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div 
-            onClick={goToLogo}
-            className="flex items-center gap-2.5 cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
-              <ShoppingBag className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent group-hover:opacity-80 transition">
-              AutoPOS
-            </span>
-          </div>
-
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1 text-sm">
-            {!isSignedIn ? (
-              <>
-                <button
-                  onClick={goToSignin}
-                  className="px-3 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={goToSignup}
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-violet-500/25 transition-all hover:scale-105"
-                >
-                  Sign Up
-                </button>
-              </>
-            ) : (
-              <>
-                {/* DASHBOARD */}
-                <button
-                  onClick={goToDashboard}
-                  className={`
-                    group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200
-                    ${pathname?.startsWith("/dashboard")
-                      ? "bg-indigo-50 text-indigo-700 font-semibold shadow-sm"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <LayoutDashboard size={16} className={`
-                    ${pathname?.startsWith("/dashboard") ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"}
-                  `} />
-                  <span>POS</span>
-                  {pathname?.startsWith("/dashboard") && (
-                    <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full ml-1" />
-                  )}
-                </button>
-
-                {/* DIVIDER */}
-                <div className="w-px h-8 bg-gray-200 mx-1" />
-
-                {/* USER */}
-                <div className="flex items-center p-1 rounded-lg hover:bg-gray-100 transition">
-                  <UserButton />
-                </div>
-              </>
-            )}
-          </div> 
-        </div>
-      </header>
 
       {/* 🌟 HERO SECTION */}
       <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 px-4 md:px-6 overflow-hidden">

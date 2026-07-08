@@ -327,7 +327,11 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     </p>
                     {cashiers.length > 0 && (
                       <span className="text-[10px] text-violet-600 font-medium">
-                        {cashiers.length} active
+                        {
+                          cashiers.filter(
+                            (cashier: any) => cashier.isActive
+                          ).length
+                        } active
                       </span>
                     )}
                   </div>
@@ -377,7 +381,13 @@ export default function DashboardUI({ userId }: { userId: string }) {
                                   {cashier.openingCash} TND
                                 </p>
                               </div>
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  cashier.isActive
+                                    ? "bg-emerald-500"
+                                    : "bg-red-500"
+                                }`}
+                              />
                             </div>
                           </div>
                         </div>

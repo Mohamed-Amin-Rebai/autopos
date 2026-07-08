@@ -171,6 +171,16 @@ ${prompt}
           },
         });
 
+        if (dbUser.role === "user") {
+          await prisma.user.update({
+            where: {
+              id: dbUser.id,
+            },
+            data: {
+              role: "manager",
+            },
+          });
+        }
         console.log("✅ POS saved to DB");
       } catch (err) {
         console.error("❌ Failed to save POS:", err);

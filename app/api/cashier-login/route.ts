@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
@@ -27,11 +28,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // temporary until we add bcrypt
-    if (cashier.passwordHash !== password) {
+    const isValid = await bcrypt.compare(
+      password,
+      cashier.passwordHash
+    );
+
+    if (!isValid) {
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
+      );
+    }
+
+    if (!cashier.isActive) {
+      return NextResponse.json(
+        { error: "Cashier account is disabled" },
+        { status: 403 }
       );
     }
 

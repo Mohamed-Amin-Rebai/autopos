@@ -6,7 +6,7 @@ export default async function AdminPage() {
   const user = await getOrCreateUser();
 
   if (!user || user.role !== "admin") {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return <AdminUI />;

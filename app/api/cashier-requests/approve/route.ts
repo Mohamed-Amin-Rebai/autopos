@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
@@ -55,11 +56,13 @@ export async function POST(req: Request) {
 
     for (let i = 0; i < configs.length; i++) {
       const config = configs[i];
+      const password = Math.random().toString(36).slice(2, 10);
+      const hashedPassword = await bcrypt.hash(password, 10);
       const cashier = await prisma.cashier.create({
         data: {
           posId: request.posId,
           username: `cashier_${request.posId}_${existingCashiersCount + i + 1}`,
-          passwordHash: "temp123",
+          passwordHash: hashedPassword,
           openingCash: config.openingCash,
           shiftStart: config.shiftStart,
           shiftEnd: config.shiftEnd,
@@ -69,7 +72,7 @@ export async function POST(req: Request) {
       cashiers.push({
         id: cashier.id,
         username: cashier.username,
-        password: "temp123",
+        password,
         openingCash: cashier.openingCash,
         shiftStart: cashier.shiftStart,
         shiftEnd: cashier.shiftEnd,

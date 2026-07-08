@@ -57,3 +57,70 @@ export async function GET(
     );
   }
 }
+
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ cashierId: string }> }
+) {
+  try {
+    const { cashierId } = await params;
+
+    if (!cashierId) {
+      return NextResponse.json(
+        { error: "Cashier ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+
+    if (!body) {
+      return NextResponse.json(
+        { error: "Request body is required" },
+        { status: 400 }
+      );
+    }
+
+    const updatedCashier =
+      await prisma.cashier.update({
+        where: {
+          id: cashierId,
+        },
+        data: {
+          ...(body.isActive !== undefined && {
+            isActive: body.isActive,
+          }),
+
+          ...(body.shiftStart && {
+            shiftStart: body.shiftStart,
+          }),
+
+          ...(body.shiftEnd && {
+            shiftEnd: body.shiftEnd,
+          }),
+
+          ...(body.cashAdjustment !== undefined && {
+            openingCash: {
+              increment: body.cashAdjustment,
+            },
+          }),
+        },
+      });
+
+    return NextResponse.json(
+      updatedCashier
+    );
+  } catch (err) {
+    console.error(err);
+
+    return NextResponse.json(
+      {
+        error: "Failed to update cashier",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}

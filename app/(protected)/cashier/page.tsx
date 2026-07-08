@@ -29,7 +29,7 @@ export default function CashierPage() {
 
   const loadPOS = async () => {
     if (!cashierId) {
-      router.push("/welcome");
+      router.push("/");
       return null;
     }
     const res = await fetch(`/api/cashier/${cashierId}`);

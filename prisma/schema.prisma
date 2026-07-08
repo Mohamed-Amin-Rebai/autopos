@@ -12,7 +12,7 @@ model User {
   clerkId   String   @unique
   email     String   @unique
   name      String?
-  role      String   @default("user")
+  role      String   @default("user") // user | manager | admin
   createdAt DateTime @default(now())
 
   pos    POS[]

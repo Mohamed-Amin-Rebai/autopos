@@ -6,9 +6,7 @@ import {
   Clock, 
   DollarSign, 
   CheckCircle, 
-  XCircle, 
   Loader2,
-  Calendar,
   UserPlus,
   ArrowRight
 } from "lucide-react";
@@ -17,6 +15,8 @@ export default function AdminCashierRequests() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [generatedCashiers, setGeneratedCashiers] = useState<any[]>([]);
+  const [showCredentials, setShowCredentials] = useState(false);
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -52,6 +52,100 @@ export default function AdminCashierRequests() {
   }
 
   return (
+    <>
+      {showCredentials && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto border border-white/20">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <CheckCircle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Cashiers Created Successfully
+                </h2>
+                <p className="text-sm text-amber-600 font-medium">
+                  ⚠️ Save these credentials immediately
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <p className="text-sm text-amber-700 flex items-center gap-2">
+                <span className="text-base">📌</span>
+                These credentials won't be shown again. Store them securely.
+              </p>
+            </div>
+
+            {/* Cashier Cards */}
+            <div className="space-y-3">
+              {generatedCashiers.map((cashier, index) => (
+                <div
+                  key={cashier.id}
+                  className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-md shadow-violet-500/20">
+                        <span className="text-xs font-bold text-white">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">
+                        Cashier #{index + 1}
+                      </span>
+                    </div>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 mt-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Username</span>
+                      <span className="font-mono text-sm font-medium text-gray-800 bg-gray-100 px-3 py-1 rounded-lg">
+                        {cashier.username}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Password</span>
+                      <span className="font-mono text-sm font-medium text-gray-800 bg-gray-100 px-3 py-1 rounded-lg">
+                        {cashier.password}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-200/50">
+                      <span className="text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        Shift
+                      </span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {cashier.shiftStart} <span className="text-gray-400">→</span> {cashier.shiftEnd}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowCredentials(false);
+                setGeneratedCashiers([]);
+              }}
+              className="mt-5 w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-3 rounded-xl 
+                        hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 
+                        shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30
+                        font-medium text-sm flex items-center justify-center gap-2"
+            >
+              <span>✓</span>
+              I've Saved the Credentials
+            </button>
+          </div>
+        </div>
+      )}
+    
     <div className="max-w-7xl mx-auto mt-6">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-shadow">
         
@@ -182,7 +276,11 @@ export default function AdminCashierRequests() {
                         );
 
                         const data = await res.json();
-                        console.log(data);
+
+                        if (data.cashiers) {
+                          setGeneratedCashiers(data.cashiers);
+                          setShowCredentials(true);
+                        }
 
                         setRequests((prev) =>
                           prev.filter((r) => r.id !== request.id)
@@ -215,5 +313,6 @@ export default function AdminCashierRequests() {
         </div>
       </div>
     </div>
+    </>
   );
 }

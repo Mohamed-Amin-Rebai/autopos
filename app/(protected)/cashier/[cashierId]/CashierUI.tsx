@@ -1,32 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams} from "next/navigation";
+import { useRouter} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
-import { POSData } from "@/lib/types";
+import { Product , Cashier , POSData, CartItem } from "@/lib/types";
 import {Loader2, LogOut, User, DollarSign} from "lucide-react";
+import { toast } from "sonner";
 
-export default function CashierPage() {
-
-  type CartItem = {
-    product: any;
-    quantity: number;
-  };
+export default function CashierUI(
+{
+  cashierId,
+}: {
+  cashierId: string;
+}
+) {
 
   const [data, setData] = useState<POSData | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [posId, setPosId] = useState("");
   const [loading, setLoading] = useState(true);
-  const [cashier, setCashier] = useState<any>(null);
+  const [cashier, setCashier] = useState<Cashier>();
   const router = useRouter();
-
-  // ✅ get cashierid
-  const searchParams = useSearchParams();
-  const cashierId = searchParams.get("cashierId");
-
+  
   const loadPOS = async () => {
     if (!cashierId) {
       router.push("/");
@@ -35,6 +33,9 @@ export default function CashierPage() {
     const res = await fetch(`/api/cashier/${cashierId}`);
     if (!res.ok) throw new Error("Failed to fetch POS");
     const response = await res.json();
+    if (!response.cashier || !response.pos?.current) {
+      throw new Error("Invalid response");
+    }
 
     setPosId(response.cashier.posId);
     setCashier(response.cashier);
@@ -94,10 +95,10 @@ export default function CashierPage() {
     );
   }
 
-  const hasCategories = data?.categories && data.categories.length > 0;
+  const hasCategories = data.categories?.length > 0;
 
-  // ✅ cart logic
-  const addToCart = (product: any) => {
+  // cart logic
+  const addToCart = (product: Product) => {
     const existing = cart.find(
       (item) => item.product.id === product.id
     );
@@ -140,44 +141,9 @@ export default function CashierPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col p-4 md:p-6">
 
-      {/* ✅ Cashier Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-4 md:p-5 mb-6 hover:shadow-md transition-shadow">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Cashier</p>
-              <p className="font-semibold text-gray-900 text-lg">
-                {cashier?.username}
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-200/50">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              <div>
-                <p className="text-xs text-gray-500">Opening Cash</p>
-                <p className="font-semibold text-emerald-700 text-sm">
-                  {cashier?.openingCash} TND
-                </p>
-              </div>
-            </div>
 
-            <button
-              onClick={() => router.push("/cashier/login")}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all hover:scale-105"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ✅ POS MAIN - Grid Layout */}
+      {/*POS MAIN - Grid Layout */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4">
         <div className="flex gap-4">
           
@@ -216,6 +182,56 @@ export default function CashierPage() {
             />
           </div>
 
+        </div>
+      </div>
+
+
+      {/* Cashier Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-4 md:p-5 mb-6 hover:shadow-md transition-shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Cashier</p>
+              <p className="font-semibold text-gray-900 text-lg">
+                {cashier?.username}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-200/50">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <div>
+                <p className="text-xs text-gray-500">Opening Cash</p>
+                <p className="font-semibold text-emerald-700 text-sm">
+                  {cashier?.openingCash} TND
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                try {
+                  await fetch("/api/cashier-logout", {
+                    method: "POST",
+                  });
+
+                  toast.success("Logged out successfully");
+
+                  window.location.href = `/cashier/${cashierId}`;
+                } catch {
+                  toast.error("Failed to logout");
+                }
+              }}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all hover:scale-105"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 

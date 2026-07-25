@@ -54,13 +54,16 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       orderId: updatedOrder.id,
+      receiptNumber: updatedOrder.receiptNumber,
     });
 
   } catch (err) {
-    console.error("❌ Update order error:", err);
+
+    console.error("Update order error:", err);
     return NextResponse.json(
       { error: "Failed to update order" },
       { status: 500 }
     );
+
   }
 }

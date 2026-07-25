@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import type { CashierConfig } from "@/lib/types";
+import { toast } from "sonner";
 import { 
   Users, 
   Clock, 
@@ -11,9 +13,8 @@ import {
   Loader2,
   Calendar,
   UserPlus,
-  CheckCircle,
   XCircle,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react";
 
 export default function RequestCashiersPage() {
@@ -27,20 +28,18 @@ export default function RequestCashiersPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [cashierCount, setCashierCount] = useState(1);
-  const [cashiers, setCashiers] = useState([
+  const [cashiers, setCashiers] = useState<CashierConfig[]>([
     {
-        openingCash: 100,
-        shiftStart: "",
-        shiftEnd: "",
+      openingCash: 100,
+      shiftStart: "",
+      shiftEnd: ""
     },
   ]);
 
   useEffect(() => {
     const loadPOS = async () => {
       try {
-        const res = await fetch(
-          `/api/pos?posId=${posId}`
-        );
+        const res = await fetch(`/api/pos/${posId}`);
 
         if (!res.ok) {
           throw new Error("Failed to fetch POS");
@@ -122,8 +121,7 @@ export default function RequestCashiersPage() {
               min={1}
               value={cashierCount}
               onChange={(e) => {
-                const count = Number(e.target.value);
-
+                const count = Math.min(20,Math.max(1, Number(e.target.value)));
                 setCashierCount(count);
 
                 setCashiers(
@@ -237,7 +235,9 @@ export default function RequestCashiersPage() {
               try {
                 setSubmitting(true);
 
-                await fetch("/api/cashier-requests", {
+                const res = await fetch(
+                "/api/cashier-requests",
+                {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -247,11 +247,20 @@ export default function RequestCashiersPage() {
                     requestedCashiers: cashiers.length,
                     cashierConfigs: cashiers,
                   }),
-                });
+                }
+              );
 
-                router.push("/dashboard");
+              if (!res.ok) {
+                const data = await res.json();
+                toast.error(data.error || "Failed");
+                return;
+              }
+              toast.success("Cashiers Requested Successfully");
+              router.push("/cashiers");
+
               } catch (err) {
                 console.error(err);
+                toast.error("Cashiers Request Failed");
               } finally {
                 setSubmitting(false);
               }

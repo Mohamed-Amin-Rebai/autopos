@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {CashierManagementPOS} from "@/lib/types";
 import {
   Users,
   Clock,
@@ -19,25 +20,10 @@ import {
   UserCheck,
   UserX
 } from "lucide-react";
-
-interface Cashier {
-  id: string;
-  username: string;
-  openingCash: number;
-  shiftStart: string | null;
-  shiftEnd: string | null;
-  isActive: boolean;
-  createdAt: string;
-}
-
-interface POSData {
-  posId: string;
-  posName: string;
-  cashiers: Cashier[];
-}
+import { toast } from "sonner";
 
 export default function CashiersUI() {
-  const [posData, setPosData] = useState<POSData[]>([]);
+  const [posData, setPosData] = useState<CashierManagementPOS[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCashier, setEditingCashier] = useState<{
@@ -50,8 +36,27 @@ export default function CashiersUI() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const router = useRouter();
 
+  const loadCashiers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/cashier-management");
+      if (!res.ok) throw new Error("Failed to load cashiers");
+      const data = await res.json();
+      setPosData(data.data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load cashier");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadCashiers();
+    const init = async () => {
+      await loadCashiers();
+    };
+
+    void init();
   }, []);
 
   const getWorkStatus = (
@@ -63,22 +68,11 @@ export default function CashiersUI() {
     }
 
     const now = new Date();
-
-    const current =
-        now.getHours() * 60 +
-        now.getMinutes();
-
-    const [startHour, startMinute] =
-        shiftStart.split(":").map(Number);
-
-    const [endHour, endMinute] =
-        shiftEnd.split(":").map(Number);
-
-    const start =
-        startHour * 60 + startMinute;
-
-    const end =
-        endHour * 60 + endMinute;
+    const current = now.getHours() * 60 + now.getMinutes();
+    const [startHour, startMinute] = shiftStart.split(":").map(Number);
+    const [endHour, endMinute] = shiftEnd.split(":").map(Number);
+    const start = startHour * 60 + startMinute;
+    const end = endHour * 60 + endMinute;
 
     if (start <= end) {
         return (
@@ -92,20 +86,6 @@ export default function CashiersUI() {
         current <= end
     );
     };
-
-  const loadCashiers = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/cashier-management");
-      if (!res.ok) throw new Error("Failed to load cashiers");
-      const data = await res.json();
-      setPosData(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleCashierStatus = async (cashierId: string, currentStatus: boolean) => {
     try {
@@ -124,8 +104,9 @@ export default function CashiersUI() {
           c.id === cashierId ? { ...c, isActive: !currentStatus } : c
         )
       })));
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to toggle status");
     } finally {
       setUpdatingId(null);
     }
@@ -152,19 +133,29 @@ export default function CashiersUI() {
         )
       })));
       setEditingCashier(null);
-    } catch (err) {
-      console.error(err);
+      toast.success("Cashier updated successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update cashier");
     } finally {
       setUpdatingId(null);
     }
   };
 
-  const filteredData = posData.map(pos => ({
-    ...pos,
-    cashiers: pos.cashiers.filter(c => 
-      c.username.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }))
+  const filteredData = posData
+    .map((pos) => ({
+      ...pos,
+      cashiers: pos.cashiers.filter((c) =>
+        c.username
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+      ),
+    }))
+    .filter(
+      (pos) =>
+        pos.cashiers.length > 0 ||
+        searchTerm === ""
+    );
 
   if (loading) {
     return (
@@ -430,7 +421,7 @@ export default function CashiersUI() {
                                       id: cashier.id,   
                                       shiftStart: cashier.shiftStart || '',
                                       shiftEnd: cashier.shiftEnd || '',
-                                      openingCash: cashier.openingCash,
+                                      openingCash: cashier.openingCash
                                     })}
                                     className="p-2 bg-violet-100 text-violet-600 rounded-lg hover:bg-violet-200 
                                                transition-all duration-200 hover:scale-105 opacity-0 group-hover:opacity-100"

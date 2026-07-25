@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import type { POSStoredData } from "@/lib/types";
 
 export async function POST(req: Request) {
 
@@ -29,13 +30,6 @@ export async function POST(req: Request) {
       where: { id: posId },
     });
 
-    if (existing.userId !== user.id && user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     if (!existing) {
       return NextResponse.json(
         { error: "POS not found" },
@@ -43,8 +37,15 @@ export async function POST(req: Request) {
       );
     }
 
+    if (existing.userId !== user.id && user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     // extract previous history
-    const existingData = existing.data as any;
+    const existingData = existing.data as POSStoredData;
 
     const updatedData = {
       current: data,
@@ -70,8 +71,12 @@ export async function POST(req: Request) {
       posId: updated.id,
     });
 
-  } catch (err) {
-    console.error("❌ Update error:", err);
+  } catch (error) {
+    console.error(
+      "POS update failed",
+      user.id,
+      error
+    );
 
     return NextResponse.json(
       { error: "Update failed" },

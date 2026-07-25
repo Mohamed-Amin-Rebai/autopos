@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import type { CashierRequestConfig, GeneratedCashierCredentials } from "@/lib/types";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -14,8 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const { requestId } = body;
+    const { requestId } = await req.json();
 
     if (!requestId) {
       return NextResponse.json(
@@ -37,9 +37,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (request.status === "approved") {
+    if (request.status !== "pending") {
       return NextResponse.json(
-        { error: "Already approved" },
+        { error: "Already approved or rejected" },
         { status: 400 }
       );
     }
@@ -51,41 +51,65 @@ export async function POST(req: Request) {
       },
     });
 
-    const cashiers = [];
-    const configs = request.cashierConfigs as any[];
+    const cashiers: GeneratedCashierCredentials[] = [];
+    const configs = request.cashierConfigs as CashierRequestConfig[];
 
-    for (let i = 0; i < configs.length; i++) {
-      const config = configs[i];
-      const password = Math.random().toString(36).slice(2, 10);
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const cashier = await prisma.cashier.create({
+
+    await prisma.$transaction(async (tx) => {
+  
+      for (let i = 0; i < configs.length; i++) {
+        const config = configs[i];
+        const password = Math.random().toString(36).slice(2, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const cashier = await tx.cashier.create({
+          data: {
+            posId: request.posId,
+            username: `cashier_${request.posId}_${existingCashiersCount + i + 1}`,
+            passwordHash: hashedPassword,
+            openingCash: config.openingCash,
+            shiftStart: config.shiftStart,
+            shiftEnd: config.shiftEnd,
+            allowedIp: config.allowedIp,
+          },
+        });
+
+        cashiers.push({
+          id: cashier.id,
+          username: cashier.username,
+          password,
+          url: `/cashier/${cashier.id}`,
+          openingCash: cashier.openingCash,
+          shiftStart: cashier.shiftStart,
+          shiftEnd: cashier.shiftEnd,
+        });
+      }
+
+      await tx.cashierRequest.update({
+        where: {
+          id: request.id,
+        },
         data: {
-          posId: request.posId,
-          username: `cashier_${request.posId}_${existingCashiersCount + i + 1}`,
-          passwordHash: hashedPassword,
-          openingCash: config.openingCash,
-          shiftStart: config.shiftStart,
-          shiftEnd: config.shiftEnd,
+          status: "approved",
         },
       });
 
-      cashiers.push({
-        id: cashier.id,
-        username: cashier.username,
-        password,
-        openingCash: cashier.openingCash,
-        shiftStart: cashier.shiftStart,
-        shiftEnd: cashier.shiftEnd,
+      const pos = await tx.pOS.findUnique({
+        where: {
+          id: request.posId,
+        },
+        select: {
+          name: true,
+        },
       });
-    }
 
-    await prisma.cashierRequest.update({
-      where: {
-        id: request.id,
-      },
-      data: {
-        status: "approved",
-      },
+      await tx.notification.create({
+        data: {
+          userId: request.ownerId,
+          title: "Cashier Request Approved",
+          message: `Your cashier request for "${pos?.name ?? request.posId}" has been approved and cashier accounts were generated.`,
+        },
+      });
+
     });
 
     return NextResponse.json({
@@ -94,11 +118,12 @@ export async function POST(req: Request) {
     });
 
   } catch (err) {
-    console.error(err);
 
+    console.error("Cashier approval error:",err);
     return NextResponse.json(
       { error: "Failed to approve request" },
       { status: 500 }
     );
+
   }
 }

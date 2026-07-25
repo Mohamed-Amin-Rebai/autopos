@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import HeaderWrapper  from "@/components/HeaderWrapper";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export default async function RootLayout({
         <body className="min-h-full flex flex-col">
           <HeaderWrapper />
           {children}
+          <Toaster position="top-right" richColors closeButton />
         </body>
       </html>
     </ClerkProvider>

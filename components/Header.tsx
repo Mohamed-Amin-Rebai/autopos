@@ -2,9 +2,17 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
+import NotificationBell from "./NotificationBell";
 import { LayoutDashboard, Shield, ShoppingBag, BarChart3, Users } from "lucide-react";
 
-export default function Header({ role }: { role: string }) {
+type HeaderRole =
+  | ""
+  | "user"
+  | "manager"
+  | "admin";
+
+
+export default function Header({ role }: { role: HeaderRole }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isSignedIn } = useUser();
@@ -13,15 +21,13 @@ export default function Header({ role }: { role: string }) {
   const isManager = role === "manager";
 
   // Hide header on cashier login pages
-  if (
-    pathname?.startsWith("/cashier?cashierId=") ||
-    pathname?.startsWith("/cashier/login")
-  ) {
+  if (pathname.startsWith("/cashier/")) {
     return null;
   }
 
-  // ✅ helper for active styling
-  const isActive = (route: string) => pathname === route;
+  // helper for active styling
+  const isActive = (route: string) =>
+  pathname === route || pathname.startsWith(`${route}/`);
 
   // Navigation handlers
   const goToSignin = () => router.push("/sign-in");
@@ -46,7 +52,7 @@ export default function Header({ role }: { role: string }) {
         </div>
 
         {/* NAV - Desktop */}
-        <div className="items-center gap-1 text-sm">
+        <div className="flex items-center gap-1 text-sm">
           {!isSignedIn ? (
             // Unauthenticated users - show Login/Sign Up
             <>
@@ -168,15 +174,8 @@ export default function Header({ role }: { role: string }) {
 
               {/* USER */}
               <div className="flex items-center p-1 rounded-lg hover:bg-gray-100 transition">
-                <UserButton>
-                  <UserButton.MenuItems>
-                    <UserButton.Link
-                      label="Cashier Login"
-                      href="/cashier/login"
-                      labelIcon={<Users size={16} />}
-                    />
-                  </UserButton.MenuItems>
-                </UserButton>
+                <NotificationBell />
+                <UserButton />
               </div>
 
             </div>

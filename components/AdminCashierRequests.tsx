@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CashierRequest,
+  CashierRequestConfig, 
+  GeneratedCashierCredentials,
+} from "@/lib/types";
+
 import { 
   Users, 
   Clock, 
@@ -12,11 +18,86 @@ import {
 } from "lucide-react";
 
 export default function AdminCashierRequests() {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<CashierRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [generatedCashiers, setGeneratedCashiers] = useState<any[]>([]);
+  const [generatedCashiers, setGeneratedCashiers] = useState<GeneratedCashierCredentials[]>([]);
   const [showCredentials, setShowCredentials] = useState(false);
+
+  const approveRequest = async (requestId: string) => {
+    try {
+      setApprovingId(requestId);
+
+      const res = await fetch("/api/cashier-requests/approve",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            requestId,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Approval failed");
+      }
+
+      if (data.cashiers) {
+        setGeneratedCashiers(data.cashiers);
+        setShowCredentials(true);
+      }
+
+      setRequests((prev) =>
+        prev.filter(
+          (r) => r.id !== requestId
+        )
+      );
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const rejectRequest = async (requestId: string) => {
+    try {
+      setApprovingId(requestId);
+
+      const res = await fetch("/api/cashier-requests/reject",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":"application/json",
+          },
+          body: JSON.stringify({
+            requestId,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Reject failed");
+      }
+
+      setRequests((prev) =>
+        prev.filter(
+          (r) => r.id !== requestId
+        )
+      );
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -28,7 +109,7 @@ export default function AdminCashierRequests() {
         }
 
         const data = await res.json();
-        setRequests(data);
+        setRequests(data.requests || []);
 
       } catch (err) {
         console.error(err);
@@ -74,7 +155,7 @@ export default function AdminCashierRequests() {
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
               <p className="text-sm text-amber-700 flex items-center gap-2">
                 <span className="text-base">📌</span>
-                These credentials won't be shown again. Store them securely.
+                These credentials won&apos;t be shown again. Store them securely.
               </p>
             </div>
 
@@ -114,6 +195,12 @@ export default function AdminCashierRequests() {
                         {cashier.password}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">URL</span>
+                      <span className="font-mono text-sm font-medium text-gray-800 bg-gray-100 px-3 py-1 rounded-lg">
+                        {cashier.url}
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-200/50">
                       <span className="text-gray-500 flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
@@ -140,7 +227,7 @@ export default function AdminCashierRequests() {
                         font-medium text-sm flex items-center justify-center gap-2"
             >
               <span>✓</span>
-              I've Saved the Credentials
+              I&apos;ve Saved the Credentials
             </button>
           </div>
         </div>
@@ -218,7 +305,7 @@ export default function AdminCashierRequests() {
                         Cashier Details
                       </p>
                       <div className="space-y-2">
-                        {configs.map((config: any, index: number) => (
+                        {configs.map((config: CashierRequestConfig, index: number) => (
                           <div
                             key={index}
                             className="bg-white rounded-lg p-3 border border-gray-200/50"
@@ -251,61 +338,56 @@ export default function AdminCashierRequests() {
                     </div>
                   )}
 
-                  {/* Approve Button */}
-                  <button
-                    className="w-full mt-2 text-xs font-medium bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-2.5 rounded-xl 
-                              hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 
-                              disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-500/20
-                              hover:shadow-violet-500/30 flex items-center justify-center gap-2"
-                    disabled={approvingId === request.id}
-                    onClick={async () => {
-                      try {
-                        setApprovingId(request.id);
+                  {/* Approve and Reject Buttons */}
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button
+                      disabled={approvingId === request.id}
+                      onClick={() => approveRequest(request.id)}
+                      className="
+                        px-4 py-2.5 text-xs font-medium
+                        bg-gradient-to-r from-violet-600 to-indigo-600
+                        text-white py-2.5 rounded-xl
+                        hover:from-violet-700 hover:to-indigo-700
+                        transition-all duration-200
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        shadow-lg shadow-violet-500/20
+                        hover:shadow-violet-500/30
+                        flex items-center justify-center gap-2
+                      "
+                    >
+                      {approvingId === request.id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Approving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Approve
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
 
-                        const res = await fetch(
-                          "/api/cashier-requests/approve",
-                          {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              requestId: request.id,
-                            }),
-                          }
-                        );
+                    <button
+                      disabled={approvingId === request.id}
+                      onClick={() => rejectRequest(request.id)}
+                      className="
+                        px-4 py-2.5 text-xs font-medium
+                        bg-gradient-to-r from-red-500 to-rose-500
+                        text-white py-2.5 rounded-xl
+                        hover:from-red-600 hover:to-rose-600
+                        transition-all duration-200
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        shadow-lg shadow-red-500/20
+                        hover:shadow-red-500/30
+                        flex items-center justify-center gap-2
+                      "
+                    >
+                      Reject
+                    </button>
+                  </div>
 
-                        const data = await res.json();
-
-                        if (data.cashiers) {
-                          setGeneratedCashiers(data.cashiers);
-                          setShowCredentials(true);
-                        }
-
-                        setRequests((prev) =>
-                          prev.filter((r) => r.id !== request.id)
-                        );
-
-                      } catch (err) {
-                        console.error(err);
-                      } finally {
-                        setApprovingId(null);
-                      }
-                    }}
-                  >
-                    {approvingId === request.id ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Approving...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Approve Request
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </button>
                 </div>
               );
             })}

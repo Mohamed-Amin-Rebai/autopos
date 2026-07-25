@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import AdminCashierRequests from "@/components/AdminCashierRequests";
+import { User , POSSummary , Order} from "@/lib/types";
+import { toast } from "sonner";
 import { 
   Users, 
   ShoppingBag, 
@@ -13,16 +15,16 @@ import {
 } from "lucide-react";
 
 export default function AdminUI() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [posList, setPosList] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [posList, setPosList] = useState<POSSummary[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedPOS, setSelectedPOS] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  // ✅ load users
+  // load users
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -35,10 +37,11 @@ export default function AdminUI() {
         }
 
         const data = await res.json();
-        setUsers(data);
+        setUsers(data.users);
 
       } catch (err) {
         console.error(err);
+        toast.error("Failed to load users");
       } finally {
         setLoading(false);
       }
@@ -47,7 +50,7 @@ export default function AdminUI() {
     loadUsers();
   }, []);
 
-  // ✅ load POS
+  // load POS
   const loadPOS = async (userId: string) => {
     setLoading(true);
 
@@ -56,7 +59,7 @@ export default function AdminUI() {
       setSelectedPOS(null);
       setOrders([]);
 
-      const res = await fetch(`/api/pos?userId=${userId}`);
+      const res = await fetch(`/api/pos/user/${userId}`);
 
       if (!res.ok) {
         throw new Error("Failed to load POS");
@@ -64,40 +67,41 @@ export default function AdminUI() {
 
       const data = await res.json();
 
-      setPosList(data);
+      setPosList(data.posList);
 
     } catch (err) {
       console.error(err);
+        toast.error("Failed to load POS");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ load orders
+  // load orders
   const loadOrders = async (posId: string) => {
     setLoading(true);
 
     try {
       setSelectedPOS(posId);
 
-      const res = await fetch(`/api/orders?posId=${posId}`);
+      const res = await fetch(`/api/orders/${posId}`);
 
       if (!res.ok) {
         throw new Error("Failed to load orders");
       }
 
       const data = await res.json();
-
       setOrders(data);
 
     } catch (err) {
       console.error(err);
+        toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ update order
+  // update order
   const updateOrder = async (orderId: string) => {
     try {
       setUpdatingOrderId(orderId);
@@ -123,15 +127,17 @@ export default function AdminUI() {
             : o
         )
       );
+      toast.success("Order marked as paid");
 
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update order");
     } finally {
       setUpdatingOrderId(null);
     }
   };
 
-  // ✅ Get stats
+  // Get stats
   const totalUsers = users.length;
   const totalPOS = posList.length;
   const pendingOrders = orders.filter(o => o.status === "pending").length;
@@ -140,7 +146,7 @@ export default function AdminUI() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 p-4 md:p-8">
 
-      {/* ✅ HEADER */}
+      {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -161,7 +167,7 @@ export default function AdminUI() {
         </div>
       </div>
 
-      {/* ✅ STATS CARDS */}
+      {/* STATS CARDS */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-5 hover:shadow-md transition-shadow">
@@ -214,11 +220,11 @@ export default function AdminUI() {
         </div>
       </div>
 
-      {/* ✅ MAIN GRID */}
+      {/* MAIN GRID */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* ✅ USERS */}
+          {/* USERS */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
               <div className="flex items-center justify-between">
@@ -266,7 +272,7 @@ export default function AdminUI() {
             </div>
           </div>
 
-          {/* ✅ POS */}
+          {/* POS */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
               <div className="flex items-center justify-between">
@@ -323,7 +329,7 @@ export default function AdminUI() {
             </div>
           </div>
 
-          {/* ✅ ORDERS */}
+          {/* ORDERS */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
               <div className="flex items-center justify-between">
@@ -380,7 +386,7 @@ export default function AdminUI() {
                     </div>
                   </div>
 
-                  {/* ✅ ACTION */}
+                  {/* ACTION */}
                   {order.status === "pending" && (
                     <button
                       disabled={updatingOrderId === order.id}
@@ -411,10 +417,10 @@ export default function AdminUI() {
         </div>
       </div>
 
-      {/* ✅ CASHIER REQUESTS */}
+      {/* CASHIER REQUESTS */}
       <AdminCashierRequests />
 
-      {/* ✅ GLOBAL LOADING */}
+      {/* GLOBAL LOADING */}
       {loading && (
         <div className="max-w-7xl mx-auto mt-6">
           <div className="flex items-center justify-center gap-3 py-4 bg-white rounded-2xl shadow-sm border border-gray-200/50">

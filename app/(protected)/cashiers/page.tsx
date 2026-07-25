@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import CashierUI from "./CashiersUI";
+import CashiersUI from "./CashiersUI";
 
 export default async function CashiersPage() {
   const user = await getOrCreateUser();
@@ -9,5 +9,5 @@ export default async function CashiersPage() {
     redirect("/");
   }
 
-  return <CashierUI />;
+  return <CashiersUI />;
 }

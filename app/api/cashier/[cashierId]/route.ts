@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
 export async function GET(
   req: Request,
@@ -7,6 +9,51 @@ export async function GET(
 ) {
   try {
     const { cashierId } = await params;
+
+    const cookieStore = await cookies();
+
+    const token =
+      cookieStore.get("cashier_session")
+        ?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const session = await prisma.cashierSession.findUnique({
+      where: {
+        token,
+      },
+    });
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json(
+        {
+          error: "Session expired",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    if (session.cashierId !== cashierId) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
 
     const cashier = await prisma.cashier.findUnique({
       where: {
@@ -64,12 +111,34 @@ export async function PATCH(
   { params }: { params: Promise<{ cashierId: string }> }
 ) {
   try {
+
+    const user = await getOrCreateUser();
+    if (!user || user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     const { cashierId } = await params;
 
     if (!cashierId) {
       return NextResponse.json(
         { error: "Cashier ID is required" },
         { status: 400 }
+      );
+    }
+
+    const cashier = await prisma.cashier.findUnique({
+      where: {
+        id: cashierId,
+      },
+    });
+
+    if (!cashier) {
+      return NextResponse.json(
+        { error: "Cashier not found" },
+        { status: 404 }
       );
     }
 
@@ -100,10 +169,8 @@ export async function PATCH(
             shiftEnd: body.shiftEnd,
           }),
 
-          ...(body.cashAdjustment !== undefined && {
-            openingCash: {
-              increment: body.cashAdjustment,
-            },
+          ...(body.openingCash !== undefined && {
+            openingCash: body.openingCash,
           }),
         },
       });

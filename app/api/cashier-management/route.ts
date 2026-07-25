@@ -23,41 +23,51 @@ export async function GET() {
     });
 
     if (posList.length === 0) {
-      return NextResponse.json(
-        { error: "No POS found for user" },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: [],
+      });
     }
 
-    const result = await Promise.all(
-      posList.map(async (pos : any) => {
-        const cashiers = await prisma.cashier.findMany({
-          where: {
-            posId: pos.id,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          select: {
-            id: true,
-            username: true,
-            openingCash: true,
-            shiftStart: true,
-            shiftEnd: true,
-            isActive: true,
-            createdAt: true,
-          },
-        });
+    const posIds = posList.map((p) => p.id);
 
-        return {
-          posId: pos.id,
-          posName: pos.name,
-          cashiers,
-        };
-      })
-    );
+    const allCashiers = await prisma.cashier.findMany({
+      where: {
+        posId: {
+          in: posIds,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+        username: true,
+        openingCash: true,
+        shiftStart: true,
+        shiftEnd: true,
+        isActive: true,
+        createdAt: true,
+        posId: true,
+      },
+    });
 
-    return NextResponse.json(result);
+    const result = posList.map((pos) => {
+      const cashiers = allCashiers.filter(
+        (cashier) => cashier.posId === pos.id
+      );
+
+      return {
+        posId: pos.id,
+        posName: pos.name,
+        cashiers,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
 
   } catch (err) {
     console.error(

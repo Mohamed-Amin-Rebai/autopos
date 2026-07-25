@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { PLAN_POS_PROMPT } from "@/lib/prompts/plan-pos";
+
 
 export async function POST(req: Request) {
+
+  const user = await getOrCreateUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   const body = await req.json();
   const { instruction } = body;
 
@@ -11,9 +24,23 @@ export async function POST(req: Request) {
     );
   }
 
+  if (instruction.length > 1000) {
+    return NextResponse.json(
+      { error: "Instruction too long" },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json(
+      { error: "AI service unavailable" },
+      { status: 500 }
+    );
+  }
+
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -25,35 +52,10 @@ export async function POST(req: Request) {
               parts: [
                 {
                   text: `
-You are an AI assistant managing a POS system.
+                    ${PLAN_POS_PROMPT}
 
-Your role is to plan actions BEFORE executing them.
-
-Rules:
-- Always explain what you will do in ONE short sentence
-- Be clear, deterministic, and consistent
-- Always end with a confirmation question
-- Never be vague or conversational
-- Never say "maybe" or "I think"
-
-Tone:
-- Professional
-- Direct
-- Clear
-
-Format:
-"Sure, I will [action]. Please confirm by typing 'yes' or 'no'."
-
-Examples:
-
-User: add drinks category  
-→ "I will add a new category 'Drinks'. Please confirm by typing 'yes' or 'no'."
-
-User: remove product Mouse  
-→ "I will remove the product 'Mouse'. Please confirm by typing 'yes' or 'no'."
-
-User instruction:
-"${instruction}"
+                    User instruction:
+                    "${instruction}"
                   `,
                 },
               ],
@@ -71,10 +73,18 @@ User instruction:
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     return NextResponse.json({ message: text });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({
-      message: "❌ Failed to plan action",
-    });
+
+  } catch (error) {
+
+    console.error("Plan POS error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to plan action",
+      },
+      {
+        status: 500,
+      }
+    );
+
   }
 }

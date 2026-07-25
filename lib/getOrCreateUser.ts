@@ -6,15 +6,19 @@ export async function getOrCreateUser() {
   if (!user ) return null;
 
   const existing = await prisma.user.findUnique({
-    where: { clerkId: user.id },
+    where: {
+      clerkId: user.id,
+    },
   });
-  if (existing) return existing;
 
-  // ✅ create new user in DB
+  if (existing) {
+    return existing;
+  }
+
   return await prisma.user.create({
     data: {
       clerkId: user.id,
-      email: user.emailAddresses[0].emailAddress || "",
+      email: user.emailAddresses[0]?.emailAddress ?? "",
       name: user.firstName || "",
     },
   });

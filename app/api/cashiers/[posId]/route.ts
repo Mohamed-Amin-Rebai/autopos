@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
-export async function GET(req: Request) {
+export async function GET(
+  req: Request,
+  {
+    params,
+  }: {
+    params: Promise<{ posId: string }>;
+  }
+) {
   try {
     const user = await getOrCreateUser();
 
@@ -13,19 +20,14 @@ export async function GET(req: Request) {
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const posId = searchParams.get("posId");
-
-    if (!posId) {
-      return NextResponse.json(
-        { error: "posId required" },
-        { status: 400 }
-      );
-    }
+    const { posId } = await params;
 
     const pos = await prisma.pOS.findUnique({
       where: {
         id: posId,
+      },
+      select: {
+        userId: true,
       },
     });
 
@@ -54,6 +56,8 @@ export async function GET(req: Request) {
         id: true,
         username: true,
         openingCash: true,
+        shiftStart: true,
+        shiftEnd: true,
         isActive: true,
         createdAt: true,
       },
@@ -62,14 +66,18 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(cashiers);
+    return NextResponse.json({
+      success: true,
+      cashiers,
+    });
 
   } catch (err) {
-    console.error("Cashiers fetch error:", err);
 
+    console.error("Cashiers fetch error:",err);
     return NextResponse.json(
       { error: "Failed to fetch cashiers" },
       { status: 500 }
     );
+
   }
 }

@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const user = await getOrCreateUser();
 
-    // ✅ SECURITY CHECK
+    // SECURITY CHECK
     if (!user || user.role !== "admin") {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -20,15 +20,22 @@ export async function GET() {
         email: true,
         name: true,
         role: true,
+        createdAt: true,
       },
     });
 
-    return NextResponse.json(users);
+    return NextResponse.json({
+      success: true,
+      users,
+    });
+
   } catch (err) {
-    console.error("❌ Users fetch error:", err);
+
+    console.error("Users fetch error:", err);
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 }
     );
+    
   }
 }

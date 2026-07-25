@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AnalyticsData } from "@/lib/types";
+import { toast } from "sonner";
 import { 
   TrendingUp,
   DollarSign, 
@@ -14,36 +16,6 @@ import {
   Tag
 } from "lucide-react";
 
-interface AnalyticsData {
-  posId: string;
-  posName: string;
-  revenue: number;
-  orderCount: number;
-  averageOrderValue: number;
-  dailyRevenue: Array<{ date: string; revenue: number }>;
-  cashiers: Array<{
-    id: string;
-    username: string;
-    openingCash: number;
-    orders: number;
-    revenue: number;
-  }>;
-  topProducts: Array<{
-    name: string;
-    quantity: number;
-    revenue: number;
-    category?: string;
-  }>;
-  topCategories: Array<{
-    category: string;
-    revenue: number;
-  }>;
-  busiestHours: Array<{
-    hour: string;
-    orders: number;
-  }>;
-}
-
 export default function AnalyticsUI() {
   const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,15 +24,18 @@ export default function AnalyticsUI() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+
         setLoading(true);
         const res = await fetch("/api/analytics");
-        const data = await res.json();
-        setAnalytics(data);
-        if (data.length > 0) {
-          setSelectedPOS(data[0].posId);
+        const response = await res.json();
+        setAnalytics(response.analytics);
+        if (response.analytics.length > 0) {
+          setSelectedPOS(response.analytics[0].posId);
         }
+
       } catch (err) {
         console.error("Failed to load analytics:", err);
+        toast.error("Failed to load analytics");
       } finally {
         setLoading(false);
       }
@@ -76,10 +51,6 @@ export default function AnalyticsUI() {
     return amount.toFixed(2) + ' TND';
   };
 
-  // Helper to get trend
-  const getTrend = (value: number) => {
-    return value > 0 ? 'up' : 'down';
-  };
 
   if (loading) {
     return (
@@ -109,7 +80,7 @@ export default function AnalyticsUI() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 p-4 md:p-8">
 
-      {/* ✅ HEADER */}
+      {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -141,7 +112,7 @@ export default function AnalyticsUI() {
         </div>
       </div>
 
-      {/* ✅ STATS CARDS */}
+      {/* STATS CARDS */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           
@@ -211,7 +182,7 @@ export default function AnalyticsUI() {
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-6">
 
-          {/* ✅ DAILY REVENUE */}
+          {/* DAILY REVENUE */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -234,7 +205,7 @@ export default function AnalyticsUI() {
             </div>
           </div>
 
-          {/* ✅ CASHIER PERFORMANCE */}
+          {/* CASHIER PERFORMANCE */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -282,7 +253,7 @@ export default function AnalyticsUI() {
             </div>
           </div>
 
-          {/* ✅ TOP PRODUCTS */}
+          {/* TOP PRODUCTS */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -318,7 +289,7 @@ export default function AnalyticsUI() {
             </div>
           </div>
 
-          {/* ✅ TOP CATEGORIES */}
+          {/* TOP CATEGORIES */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -351,7 +322,7 @@ export default function AnalyticsUI() {
             </div>
           </div>
 
-          {/* ✅ BUSIEST HOURS */}
+          {/* BUSIEST HOURS */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">

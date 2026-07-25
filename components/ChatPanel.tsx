@@ -1,17 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { ChatMessage, ChatPanelProps} from "@/lib/types";
 import { Bot, User, Send, History, CheckCircle } from "lucide-react";
 
 export default function ChatPanel({
   data,
   onUpdate,
   historyFromDB,
-}: any) {
-  const [messages, setMessages] = useState<
-    { role: "user" | "assistant"; text: string }[]
-  >([]);
+}: ChatPanelProps) {
 
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingInstruction, setPendingInstruction] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
@@ -24,7 +23,9 @@ export default function ChatPanel({
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const currentVersionIndex = history.length - 1;
+  const currentVersionIndex = history.length > 0
+                              ? history.length - 1
+                              : null;
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -39,7 +40,7 @@ export default function ChatPanel({
 
     setInput("");
 
-    // ✅ CONFIRMATION MODE
+    // CONFIRMATION MODE
     if (pendingInstruction) {
       if (["yes", "y", "confirm"].includes(instruction)) {
         setMessages((prev) => [
@@ -97,7 +98,7 @@ export default function ChatPanel({
       }
     }
 
-    // ✅ PLAN MODE
+    // PLAN MODE
     setMessages((prev) => [
       ...prev,
       { role: "assistant", text: "🤖 Thinking..." },
@@ -132,7 +133,7 @@ export default function ChatPanel({
   return (
     <div className="h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
 
-      {/* ✅ HEADER */}
+      {/* HEADER */}
       <div className="px-5 py-4 bg-gradient-to-r from-indigo-50/80 to-white border-b border-gray-200/60">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -148,7 +149,7 @@ export default function ChatPanel({
         </div>
       </div>
 
-      {/* ✅ HISTORY */}
+      {/* HISTORY */}
       {history.length > 0 && (
         <div className="px-3 py-2 border-b border-gray-200/60 bg-gray-50/50 max-h-36 overflow-y-auto scrollbar-thumb-gray-200">
           <div className="flex items-center gap-2 mb-2">
@@ -159,7 +160,7 @@ export default function ChatPanel({
           </div>
 
           <div className="space-y-1">
-            {history.map((h: any, i: number) => {
+            {history.map((h, i) => {
               const isCurrent = i === currentVersionIndex;
               const isSelected = selectedVersion === i;
               
@@ -203,7 +204,7 @@ export default function ChatPanel({
         </div>
       )}
 
-      {/* ✅ CHAT AREA */}
+      {/* CHAT AREA */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-200">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8">
@@ -212,7 +213,7 @@ export default function ChatPanel({
             </div>
             <p className="text-sm font-medium text-gray-600">How can I help you?</p>
             <p className="text-xs text-gray-400 mt-1 max-w-[200px]">
-              Try: "Add a drinks category" or "Increase prices by 10%"
+              Try: &quot;Add a drinks category&quot; or &quot;Increase prices by 10%&quot;
             </p>
           </div>
         )}
@@ -270,17 +271,21 @@ export default function ChatPanel({
         <div ref={endRef} />
       </div>
 
-      {/* ✅ INPUT */}
+      {/* INPUT */}
       <div className="border-t border-gray-200/60 p-4 bg-gray-50/50">
         <div className="flex items-center gap-2 bg-white rounded-2xl border border-gray-200/60 p-1.5 shadow-sm focus-within:border-indigo-300 focus-within:shadow-md focus-within:shadow-indigo-500/10 transition-all">
           
-          <input
-            className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400 px-3 py-2.5"
+          <textarea
+            className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400 px-3 py-2.5 resize-none"
+            rows={1}
             placeholder="Ask AutoPOS AI..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") sendMessage();
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
             }}
           />
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { 
   User, 
   Lock, 
@@ -12,12 +12,18 @@ import {
   Sparkles
 } from "lucide-react";
 
-export default function CashierLoginPage() {
-  const router = useRouter();
+export default function CashierLogin(
+    {
+        cashierId,
+    }: {
+        cashierId: string;
+    }
+) {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
 
   const login = async () => {
     try {
@@ -31,29 +37,34 @@ export default function CashierLoginPage() {
         body: JSON.stringify({
           username,
           password,
+          cashierId,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Login failed");
+        toast.error(data.error || "Login failed");
         return;
       }
 
-      router.push(
-        `/cashier?cashierId=${data.cashierId}`
-      );
+      setAuthenticated(true);
 
     } catch (err) {
       console.error(err);
-      alert("Login failed");
+      toast.error("Login failed");
     } finally {
       setLoading(false);
     }
   };
 
+  if (authenticated) {
+    window.location.reload();
+    return null;
+  }
+
   return (
+    
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50/50 px-4 relative overflow-hidden">
       
       {/* Background decorative elements */}

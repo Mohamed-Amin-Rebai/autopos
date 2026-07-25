@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { cookies } from "next/headers";
+import type { CartItem } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
@@ -12,21 +13,60 @@ export async function POST(req: Request) {
       discount,
       paymentMethod,
       bankDetails,
-      cashierId,
+      idempotencyKey,
     } = body;
 
-    //  get user from server
-    const dbUser = await getOrCreateUser();
-    if (!dbUser) {
+    // validate idempotency key
+    if (!idempotencyKey) {
+      return NextResponse.json(
+        { error: "Missing idempotency key" },
+        { status: 400 }
+      );
+    }
+
+    const cookieStore = await cookies();
+
+    const token =
+      cookieStore.get("cashier_session")
+        ?.value;
+
+
+    if (!token) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const userId = dbUser.id;
+    // validate cashier session
+    const session = await prisma.cashierSession.findUnique({
+      where: {
+        token,
+      },
+    });
 
-    //  basic validation
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json(
+        { error: "Session expired" },
+        { status: 401 }
+      );
+    }
+
+    // verify cashier account
+    const cashier = await prisma.cashier.findUnique({
+      where: {
+        id: session.cashierId,
+      },
+    });
+
+    if (!cashier) {
+      return NextResponse.json(
+        { error: "Cashier not found" },
+        { status: 404 }
+      );
+    }
+
+    // validate cart and POS input
     if (!cart || cart.length === 0 || !posId) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -34,7 +74,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // validate payment method
+    // validate bank payment details
     if (paymentMethod !== "cash" && paymentMethod !== "bank") {
       return NextResponse.json(
         { error: "Invalid payment method" },
@@ -52,19 +92,27 @@ export async function POST(req: Request) {
       }
     }
 
-    //  calculate totals
+    // calculate order totals
     const subtotal = cart.reduce(
-      (sum: number, item: any) =>
+      (sum: number, item: CartItem) =>
         sum + item.product.price * item.quantity,
       0
     );
     const discountValue = discount?.value || 0;
     const total = subtotal - (subtotal * discountValue) / 100;
 
-    // check if pos exists
+    // prevent invalid or manipulated totals
+    if (total <= 0) {
+      return NextResponse.json(
+        { error: "Invalid total" },
+        { status: 400 }
+      );
+    }
+
+    // verify cashier POS exists
     const pos = await prisma.pOS.findUnique({
       where: {
-        id: posId,
+        id: cashier.posId,
       },
     });
 
@@ -75,15 +123,45 @@ export async function POST(req: Request) {
       );
     }
 
-    //  create order
+    // ensure cashier cannot submit orders for another POS
+    if (posId !== cashier.posId) {
+      return NextResponse.json(
+        { error: "Invalid POS" },
+        { status: 403 }
+      );
+    }
+
+    const userId = pos.userId;
+
+    // generate receipt number
+    const receiptNumber =`RCPT-${new Date().getFullYear()}-${Date.now()}`;
+    
+    // prevent duplicate order creation
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        idempotencyKey,
+      },
+    });
+
+    if (existingOrder) {
+      return NextResponse.json({
+        success: true,
+        orderId: existingOrder.id,
+        receiptNumber: existingOrder.receiptNumber,
+      });
+    }
+
+    // create order
     const createdOrder = await prisma.order.create({
       data: {
         userId,
         posId,
-        cashierId: cashierId || null,
+        cashierId: cashier.id,
         items: cart,
         total,
         discount,
+        idempotencyKey,
+        receiptNumber,
         status:
           paymentMethod === "cash"
             ? "paid"
@@ -95,10 +173,11 @@ export async function POST(req: Request) {
       },
     });
 
-    //  return order id
+    // return receipt information
     return NextResponse.json({
       success: true,
       orderId: createdOrder.id,
+      receiptNumber: createdOrder.receiptNumber,
     });
 
   } catch (error) {

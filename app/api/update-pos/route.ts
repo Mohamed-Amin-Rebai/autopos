@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { UPDATE_POS_PROMPT } from "@/lib/prompts/update-pos";
+
 
 export async function POST(req: Request) {
+
+  const user = await getOrCreateUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
 
   const body = await req.json();
   const { currentData, instruction } = body;
@@ -19,9 +31,23 @@ export async function POST(req: Request) {
     );
   }
 
+  if (instruction.length > 1000) {
+    return NextResponse.json(
+      { error: "Instruction too long" },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json(
+      { error: "AI service unavailable" },
+      { status: 500 }
+    );
+  }
+
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -33,71 +59,14 @@ export async function POST(req: Request) {
               parts: [
                 {
                   text: `
-You are an AI POS system editor.
+                    ${UPDATE_POS_PROMPT}
 
-Your task is to MODIFY the given JSON strictly according to the user instruction.
+                    Current POS:
+                    ${JSON.stringify(currentData)}
 
-CRITICAL RULES:
-- You MUST apply the requested change
-- If a product is mentioned, you MUST find it by name and modify it
-- Do NOT ignore the instruction
-
-- Always return FULL JSON
-- Keep structure EXACT
-- Do NOT remove fields
-- Do not wrap JSON in explanations
-- Do not add comments
-- Do not add markdown
-
-
-- Categories, products must remain valid arrays
-- Product ids must stay unique
-
-- If modifying price:
-  → update the "price" field of the matching product
-
-
-When matching product names:
-- Comparison must be case-insensitive
-- Ignore slight variations in capitalization
-
-
-If an exact match is not found:
-- Try to match the closest product name
-- Do NOT ignore the instruction
-
-DISCOUNT RULES:
-
-- Discounts are stored as an array "discounts"
-- Each discount has:
-  { "name", "value", "active" }
-
-- Only ONE discount can be active at a time
-
-- If user says:
-  "activate black friday discount"
-  → set that one active=true and others false
-
-- If user says:
-  "disable discount"
-  → set all active=false
-
-- If user says:
-  "change default discount to 20%"
-  → update the value
-
-- NEVER remove the discounts array
-
-⚠️ VERY IMPORTANT:
-- You MUST actually modify the data
-- Do not return unchanged JSON
-
-Current POS:
-${JSON.stringify(currentData)}
-
-User instruction:
-"${instruction}"
-`,
+                    Instruction:
+                    "${instruction}"
+                  `,
                 },
               ],
             },
@@ -117,13 +86,16 @@ User instruction:
       return NextResponse.json(currentData);
     }
 
-    // ✅ clean markdown
+    // clean markdown
     text = text.replace(/```json|```/g, "").trim();
 
     try {
 
       const json = JSON.parse(text);
-      if (!json.products || !Array.isArray(json.products)) {
+      if (
+        !Array.isArray(json.categories) ||
+        !Array.isArray(json.products)
+      ) {
         throw new Error("Invalid structure");
       }
       return NextResponse.json(json);
@@ -137,8 +109,12 @@ User instruction:
 
   } catch (error) {
 
-    console.error("API ERROR:", error);
+    console.error(
+      "Update POS failed",
+      instruction,
+      error
+    );
     return NextResponse.json(currentData);
-    
+
   }
 }

@@ -28,6 +28,7 @@ model POS {
 
   user   User    @relation(fields: [userId], references: [id])
   orders Order[]
+  cashiers Cashier[]
 }
 
 enum OrderStatus {
@@ -46,16 +47,20 @@ model Order {
   discount       Json?
   paymentDetails Json?
   status         OrderStatus @default(pending)
+  idempotencyKey String? @unique
+  receiptNumber String @unique
   createdAt      DateTime    @default(now())
   
   user User @relation(fields: [userId], references: [id])
   pos  POS  @relation(fields: [posId], references: [id])
+  cashier Cashier? @relation(fields: [cashierId], references: [id])
 }
 
 model Cashier {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   posId String @db.ObjectId
+  pos POS @relation(fields: [posId], references: [id])
 
   username     String @unique
   passwordHash String
@@ -67,8 +72,32 @@ model Cashier {
   shiftEnd String?
 
   isActive Boolean @default(true)
+  allowedIp String?
+  sessions CashierSession[]
+  orders Order[]
 
   createdAt DateTime @default(now())
+}
+
+
+model CashierSession {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  cashierId String @db.ObjectId
+
+  token String @unique
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  cashier Cashier @relation(fields: [cashierId],references: [id])
+}
+
+enum CashierRequestStatus {
+  pending
+  approved
+  rejected
 }
 
 model CashierRequest {
@@ -80,7 +109,20 @@ model CashierRequest {
   requestedCashiers Int
   cashierConfigs Json
 
-  status String @default("pending")
+  status CashierRequestStatus @default(pending)
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId    String   @db.ObjectId
+
+  title     String
+  message   String
+
+  isRead    Boolean @default(false)
 
   createdAt DateTime @default(now())
 }

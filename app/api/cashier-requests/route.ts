@@ -107,7 +107,10 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(requests);
+    return NextResponse.json({
+      success: true,
+      requests,
+    });
 
   } catch (err) {
     console.error("Fetch requests error:", err);

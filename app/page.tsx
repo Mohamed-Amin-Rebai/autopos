@@ -3,11 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { motion, useScroll, useTransform } from "framer-motion";
+import {features, steps} from "@/lib/landing-data";
 import { 
   ArrowRight, 
   Sparkles, 
-  Zap,
-  BarChart3, 
   ShoppingBag, 
   CheckCircle,
 } from "lucide-react";
@@ -23,34 +22,6 @@ export default function Home() {
   const y1 = useTransform(scrollY, [0, 500], [0, 150]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0.6]);
-
-  const features = [
-    {
-      title: "AI-Powered Generation",
-      desc: "Describe your business naturally and get a complete POS system with products, categories, and logic instantly.",
-      icon: Sparkles,
-      gradient: "from-violet-500 to-purple-500",
-    },
-    {
-      title: "Real-Time Editing",
-      desc: "Chat with your AI assistant to modify inventory, pricing, or any part of your system dynamically without reloads.",
-      icon: Zap,
-      gradient: "from-amber-500 to-orange-500",
-    },
-    {
-      title: "Analytics Dashboard",
-      desc: "Track orders, revenue, and customer insights with clean, powerful dashboards that update in real-time.",
-      icon: BarChart3,
-      gradient: "from-emerald-500 to-teal-500",
-    },
-  ];
-
-  const steps = [
-    "Describe your business idea",
-    "AI generates your POS system",
-    "Customize with AI chat",
-    "Launch & start selling",
-  ];
 
   return (
     <main className="min-h-screen bg-white relative overflow-x-hidden">

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams} from "next/navigation";
+import { useRouter} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
 import ChatPanel from "@/components/ChatPanel";
-import { POSData } from "@/lib/types";
-
+import { POSData, CartItem, Product, POSStoredData } from "@/lib/types";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Download,
@@ -17,34 +18,31 @@ import {
 
 export default function POSPage() {
 
-  type CartItem = {
-    product: any;
-    quantity: number;
-  };
-
   const [data, setData] = useState<POSData | null>(null);
-  const [historyFromDB, setHistoryFromDB] = useState([]);
+  const [historyFromDB, setHistoryFromDB] = useState<POSStoredData["history"]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving , setIsSaving] = useState(false);
 
   const router = useRouter();
-
-  // ✅ get posId
-  const searchParams = useSearchParams();
-  const posId = searchParams.get("posId");
+  
+  const params = useParams();
+  const posId = params.posId as string;
 
   const loadPOS = async () => {
     if (!posId) {
       router.push("/");
       return null;
     }
-    const res = await fetch(`/api/pos?posId=${posId}`);
+    const res = await fetch(`/api/pos/${posId}`);
     if (!res.ok) throw new Error("Failed to fetch POS");
     const response = await res.json();
 
-    console.log(response);
+    if (!response?.current) {
+      throw new Error("Invalid POS response");
+    }
+
     setData(response.current);
     setHistoryFromDB(response.history || []);
 
@@ -104,8 +102,8 @@ export default function POSPage() {
 
   const hasCategories = data?.categories && data.categories.length > 0;
 
-  // ✅ cart logic
-  const addToCart = (product: any) => {
+  // cart logic
+  const addToCart = (product: Product) => {
     const existing = cart.find(
       (item) => item.product.id === product.id
     );
@@ -165,7 +163,7 @@ export default function POSPage() {
 
   const handleSave = async () => {
     if (!posId) {
-      alert("Missing POS ID");
+      toast.error("Missing POS ID");
       return;
     }
 
@@ -189,15 +187,15 @@ export default function POSPage() {
 
       const updated = await loadPOS();
       if (!updated) {
-        alert("❌ Failed to refresh POS after save");
+        toast.error("Failed to refresh POS after save");
         return;
       }
 
-      alert("✅ POS saved successfully");
+      toast.success("POS saved successfully");
 
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to save POS");
+      toast.error("Failed to save POS");
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +205,7 @@ export default function POSPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col">
 
-      {/* ✅ TOP BAR */}
+      {/* TOP BAR */}
       <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
 
@@ -252,7 +250,7 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* ✅ POS MAIN - Grid Layout */}
+      {/* POS MAIN - Grid Layout */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4">
         <div className="flex gap-4">
           
@@ -293,7 +291,7 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* ✅ CHAT */}
+      {/* CHAT */}
       <div className="max-w-7xl mx-auto w-full p-4 pt-0">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
           <ChatPanel

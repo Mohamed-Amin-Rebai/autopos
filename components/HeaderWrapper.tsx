@@ -5,6 +5,13 @@ export default async function HeaderWrapper() {
   const user = await getOrCreateUser();
 
   return (
-    <Header role={user?.role ?? ""} />
+    <Header
+      role={
+        (user?.role as
+          | "user"
+          | "manager"
+          | "admin") ?? ""
+      }
+    />
   );
 }

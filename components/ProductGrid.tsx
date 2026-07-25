@@ -1,15 +1,16 @@
 import { Package as PackageIcon } from "lucide-react";
+import type { Product, ProductGridProps } from "@/lib/types";
 
 export default function ProductGrid({
   products,
   selectedCategory,
   addToCart,
   hasCategories,
-}: any) {
+}: ProductGridProps) {
 
   const displayedProducts =
     hasCategories && selectedCategory
-      ? products.filter((p: any) => p.category === selectedCategory)
+      ? products.filter((p: Product) => p.category === selectedCategory)
       : products;
 
   return (
@@ -21,7 +22,7 @@ export default function ProductGrid({
       `}
     >
 
-      {/* ✅ EMPTY STATE */}
+      {/* EMPTY STATE */}
       {displayedProducts.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-400">
           <PackageIcon className="w-16 h-16 mb-4 text-gray-300" />
@@ -34,7 +35,7 @@ export default function ProductGrid({
         </div>
       )}
 
-      {displayedProducts.map((p: any) => (
+      {displayedProducts.map((p) => (
         <div
           key={p.id}
           onClick={() => addToCart(p)}
@@ -43,7 +44,7 @@ export default function ProductGrid({
                      hover:shadow-xl hover:-translate-y-1.5 hover:border-indigo-200/80"
         >
 
-          {/* ✅ IMAGE */}
+          {/* IMAGE */}
           <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50">
             {p.image ? (
               <img
@@ -59,7 +60,7 @@ export default function ProductGrid({
             )}
           </div>
 
-          {/* ✅ CONTENT  */}
+          {/* CONTENT */}
           <div className="flex flex-col flex-1 space-y-2">
 
             {/* NAME */}
@@ -80,7 +81,7 @@ export default function ProductGrid({
               {p.price} TND
             </p>
 
-            {/* ✅ ATTRIBUTES - As chips */}
+            {/* ATTRIBUTES - As chips */}
             {p.attributes && Object.keys(p.attributes).length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {Object.entries(p.attributes || {})
@@ -98,7 +99,7 @@ export default function ProductGrid({
 
           </div>
 
-          {/* ✅ CTA BUTTON  */}
+          {/* CTA BUTTON  */}
           <button
             onClick={(e) => {
               e.stopPropagation();

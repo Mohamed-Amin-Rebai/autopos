@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, DollarSign, Package, Clock, CheckCircle, ArrowRight, Loader2, Users } from "lucide-react";
+import { Order, POSSummary, CashierSummary } from "@/lib/types";
+import { toast } from "sonner";
 
 export default function DashboardUI({ userId }: { userId: string }) {
-  const [posList, setPosList] = useState<any[]>([]);
-  const [ordersMap, setOrdersMap] = useState<Record<string, any[]>>({});
+  const [posList, setPosList] = useState<POSSummary[]>([]);
+  const [ordersMap, setOrdersMap] = useState<Record<string, Order[]>>({});
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [cashiersMap, setCashiersMap] = useState<Record<string, any[]>>({});
+  const [cashiersMap, setCashiersMap] = useState<Record<string, CashierSummary[]>>({});
 
   const router = useRouter();
 
@@ -18,31 +20,33 @@ export default function DashboardUI({ userId }: { userId: string }) {
       try {
         setLoading(true);
 
-        const res = await fetch(`/api/pos?userId=${userId}`);
+        const res = await fetch(`/api/pos/user/${userId}`);
         const data = await res.json();
 
-        setPosList(data);
+        const posList = data.posList || [];
+        setPosList(posList);
 
         const ordersEntries = await Promise.all(
-          data.map(async (pos: any) => {
-            const res = await fetch(`/api/orders?posId=${pos.id}`);
-            const orders = await res.json();
-            return [pos.id, orders];
+          posList.map(async (pos: POSSummary) => {
+            const res = await fetch(`/api/orders/${pos.id}`);
+            const ordersResponse = await res.json();
+            return [pos.id, ordersResponse.orders ?? ordersResponse,];
           })
         );
         setOrdersMap(Object.fromEntries(ordersEntries));
 
         const cashierEntries = await Promise.all(
-          data.map(async (pos: any) => {
-            const res = await fetch(`/api/cashiers?posId=${pos.id}`);
-            const cashiers = await res.json();
-            return [pos.id, cashiers];
+          posList.map(async (pos: POSSummary) => {
+            const res = await fetch(`/api/cashiers/${pos.id}`);
+            const cashiersResponse = await res.json();
+            return [pos.id, cashiersResponse.cashiers ?? cashiersResponse];
           })
         );
         setCashiersMap(Object.fromEntries(cashierEntries));
 
       } catch (err) {
         console.error("POS Systems load error:", err);
+        toast.error("Failed to load dashboard");
       } finally {
         setLoading(false);
       }
@@ -51,7 +55,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
     fetchPOS();
   }, [userId]);
 
-  // ✅ LOADING STATE
+  // LOADING STATE
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex items-center justify-center">
@@ -67,7 +71,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
 
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 p-4 md:p-8">
 
-      {/* ✅ HEADER */}
+      {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -88,7 +92,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* ✅ EMPTY STATE */}
+      {/* EMPTY STATE */}
       {posList.length === 0 && (
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-3xl shadow-sm border border-gray-200/50 p-12 text-center hover:shadow-md transition-shadow">
@@ -112,7 +116,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* ✅ GRID */}
+      {/* GRID */}
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-6">
 
@@ -124,12 +128,12 @@ export default function DashboardUI({ userId }: { userId: string }) {
             const cashiers = cashiersMap[pos.id] || [];
 
             const totalRevenue = orders.reduce(
-              (sum: number, o: any) => sum + o.total,
+              (sum: number, o: Order) => sum + o.total,
               0
             );
 
-            const pendingOrders = orders.filter((o: any) => o.status === "pending").length;
-            const paidOrders = orders.filter((o: any) => o.status === "paid").length;
+            const pendingOrders = orders.filter((o: Order) => o.status === "pending").length;
+            const paidOrders = orders.filter((o: Order) => o.status === "paid").length;
 
             return (
               <div
@@ -144,7 +148,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                   <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-400 rounded-full blur-[100px] opacity-20" />
                 </div>
 
-                {/* ✅ HEADER */}
+                {/* HEADER */}
                 <div className="flex justify-between items-center mb-6 relative z-10">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -156,7 +160,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                   </div>
 
                   <button
-                    onClick={() => router.push(`/pos?posId=${pos.id}`)}
+                    onClick={() => router.push(`/pos/${pos.id}`)}
                     className="group/btn text-sm bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-2 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 flex items-center gap-1"
                   >
                     Open
@@ -173,7 +177,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
 
                 </div>
 
-                {/* ✅ STATS */}
+                {/* STATS */}
                 <div className="grid grid-cols-2 gap-3 mb-5 relative z-10">
 
                   {/* ORDERS */}
@@ -217,7 +221,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
 
                 </div>
 
-                {/* ✅ RECENT ORDERS */}
+                {/* RECENT ORDERS */}
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Recent Orders</span>
@@ -237,7 +241,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                       </div>
                     )}
 
-                    {orders.slice(0, 3).map((order: any) => (
+                    {orders.slice(0, 3).map((order: Order) => (
                       <div
                         key={order.id}
                         className="flex justify-between items-center text-xs bg-white rounded-xl px-3 py-2.5 border border-gray-100 hover:border-gray-200 transition-colors shadow-sm"
@@ -264,8 +268,8 @@ export default function DashboardUI({ userId }: { userId: string }) {
                   </div>
                 </div>
 
-                {/* ✅ QUICK ACTION */}
-                {orders.some((o: any) => o.status === "pending") && (
+                {/* QUICK ACTION */}
+                {orders.some((o: Order) => o.status === "pending") && (
                   <button
                     className="mt-4 w-full text-xs font-medium bg-gradient-to-r from-emerald-600 to-green-600 text-white py-2.5 rounded-xl 
                               hover:from-emerald-700 hover:to-green-700 transition-all duration-200 
@@ -274,7 +278,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     disabled={!!updatingOrderId}
                     onClick={async () => {
                       try {
-                        const pending = orders.find((o: any) => o.status === "pending");
+                        const pending = orders.find((o: Order) => o.status === "pending");
                         if (!pending) return;
 
                         setUpdatingOrderId(pending.id);
@@ -289,16 +293,17 @@ export default function DashboardUI({ userId }: { userId: string }) {
                           throw new Error("Failed to update order");
                         }
 
-                        setOrdersMap((prev: any) => ({
+                        setOrdersMap((prev) => ({
                           ...prev,
-                          [pos.id]: prev[pos.id].map((o: any) =>
+                          [pos.id]: prev[pos.id].map((o: Order) =>
                             o.id === pending.id
                               ? { ...o, status: "paid" }
                               : o
                           ),
                         }))
-                      } catch (err) {
-                        console.error(err);
+                      } catch (error) {
+                        console.error(error);
+                        toast.error("Failed to update order");
                       } finally {
                         setUpdatingOrderId(null);
                       }
@@ -318,7 +323,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                   </button>
                 )}
 
-                {/* ✅ CASHIERS */}
+                {/* CASHIERS */}
                 <div className="mt-4 relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -329,7 +334,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                       <span className="text-[10px] text-violet-600 font-medium">
                         {
                           cashiers.filter(
-                            (cashier: any) => cashier.isActive
+                            (cashier) => cashier.isActive
                           ).length
                         } active
                       </span>
@@ -345,7 +350,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {cashiers.map((cashier: any) => (
+                      {cashiers.map((cashier) => (
                         <div
                           key={cashier.id}
                           className="group/cashier bg-gradient-to-br from-gray-50 to-white rounded-xl p-3 border border-gray-200/50 hover:border-violet-200/50 transition-all duration-200 hover:shadow-md"

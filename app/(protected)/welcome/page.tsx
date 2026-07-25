@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, Upload, Package, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AppPage() {
   const [prompt, setPrompt] = useState("");
@@ -27,13 +28,14 @@ export default function AppPage() {
       const result = await res.json();
       
       if (!res.ok || !result.posId) {
-        alert("AI is busy, try again");
+        toast.error("AI is busy, try again");
+
         return;
       }
 
-      router.push(`/pos?posId=${result.posId}`)
-    } catch (err) {
-      alert("AI busy, try again")
+      router.push(`/pos/${result.posId}`)
+    } catch {
+      toast.error("AI is busy, try again");
     } finally {
       setLoading(false);
     }
@@ -62,6 +64,7 @@ export default function AppPage() {
         <div className="w-full max-w-2xl">
           <div className="relative">
             <textarea
+              maxLength={1000}
               className="w-full border border-gray-200 rounded-2xl p-5 h-[160px] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md resize-none text-gray-700 placeholder-gray-400"
               placeholder="e.g. fast food restaurant, clothing store, coffee shop, electronics store..."
               value={prompt}

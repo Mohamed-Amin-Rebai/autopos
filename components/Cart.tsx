@@ -1,5 +1,12 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Wallet, Banknote, X } from "lucide-react";
+import { toast } from "sonner";
+import type {
+  CartProps,
+  Discount,
+  PaymentMethod,
+} from "@/lib/types";
 
 export default function Cart({
   cart,
@@ -9,26 +16,40 @@ export default function Cart({
   removeFromCart,
   increaseQty,
   decreaseQty,
-  data
-}: any) {
+  data,
+}: CartProps) {
 
   const [showPayment, setShowPayment] = useState(false);
-  const [method, setMethod] = useState("cash");
+  const [method, setMethod] = useState<PaymentMethod>("cash");
   const [processing, setProcessing] = useState(false);
   const [accountName, setAccountName] = useState("");
   const [accountNumber , setAccountNumber ] = useState("");
+  const [idempotencyKey] = useState(() =>
+    crypto.randomUUID()
+  );
+  const router = useRouter();
+
+  const paymentMethods: {
+    id: PaymentMethod;
+    label: string;
+    icon: typeof Banknote;
+  }[] = [
+    { id: "cash", label: "Cash", icon: Banknote },
+    { id: "bank", label: "Bank Transfer", icon: Wallet },
+  ];
 
   const subtotal = cart.reduce(
-    (sum: number, item: any) =>
+    (sum, item) =>
       sum + item.product.price * item.quantity,
     0
   );
 
-  const activeDiscount =
-    data?.discounts?.find((d: any) => d.active) || {
-      name: "None",
-      value: 0
-    };
+  const activeDiscount: Discount =
+  data?.discounts?.find((d) => d.active) ?? {
+    name: "None",
+    value: 0,
+    active: false,
+  };
 
   const discountValue = activeDiscount.value;
   const discountAmount = (subtotal * discountValue) / 100;
@@ -36,22 +57,21 @@ export default function Cart({
 
   const handlePayment = async () => {
     if (!cart.length) {
-      alert("Cart is empty");
+      toast.error("Cart is empty");
       return;
     }
 
     if (!posId) {
-      alert("Missing POS ID");
+      toast.error("Missing POS ID");
       return;
     }
 
     if (method === "bank") {
       if (!accountName || !accountNumber) {
-        alert("Please fill bank details");
+        toast.error("Please fill bank details");
         return;
       }
     }
-
 
     try {
       setProcessing(true);
@@ -63,6 +83,7 @@ export default function Cart({
           cart,
           posId,
           cashierId,
+          idempotencyKey,
           discount: activeDiscount,
           paymentMethod: method,
           bankDetails: method === "bank"
@@ -75,14 +96,17 @@ export default function Cart({
         throw new Error("Failed");
       }
 
-      alert("✅ Order created successfully");
+      const data = await res.json();
+
       setAccountName("");
       setAccountNumber("");
       setShowPayment(false);
       onClearCart();
 
+      router.push(`/receipt/${data.orderId}`);
+
     } catch {
-      alert("❌ Error");
+      toast.error("Error");
     } finally {
       setProcessing(false);
     }
@@ -91,7 +115,7 @@ export default function Cart({
   return (
     <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
 
-      {/* ✅ HEADER */}
+      {/* HEADER */}
       <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -108,7 +132,7 @@ export default function Cart({
         </div>
       </div>
 
-      {/* ✅ ITEMS LIST */}
+      {/* ITEMS LIST */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
 
         {cart.length === 0 && (
@@ -121,7 +145,7 @@ export default function Cart({
           </div>
         )}
 
-        {cart.map((item: any) => (
+        {cart.map((item) => (
           <div
             key={item.product.id}
             className="group bg-gray-50/80 rounded-xl p-3 border border-gray-100/80 
@@ -199,7 +223,7 @@ export default function Cart({
         ))}
       </div>
 
-      {/* ✅ TOTALS */}
+      {/* TOTALS */}
       {cart.length > 0 && (
         <div className="px-5 py-4 border-t border-gray-200/60 bg-gray-50/80">
           
@@ -238,7 +262,7 @@ export default function Cart({
         </div>
       )}
 
-      {/* ✅ PAYMENT PANEL */}
+      {/* PAYMENT PANEL */}
       {showPayment && cart.length > 0 && (
         <div className="px-5 py-4 border-t border-gray-200/60 bg-white">
           
@@ -257,10 +281,7 @@ export default function Cart({
 
           {/* METHOD SELECTOR */}
           <div className="grid grid-cols-2 gap-2 mb-4">
-            {[
-              { id: "cash", label: "Cash", icon: Banknote },
-              { id: "bank", label: "Bank Transfer", icon: Wallet },
-            ].map(({ id, label, icon: Icon }) => (
+            {paymentMethods.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setMethod(id)}

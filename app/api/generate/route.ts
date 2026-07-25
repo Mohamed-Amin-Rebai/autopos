@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { POS_PROMPT } from "@/lib/prompts/pos";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -21,9 +22,16 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json(
+      { error: "AI service unavailable" },
+      { status: 500 }
+    );
+  }
+
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -35,84 +43,10 @@ export async function POST(req: Request) {
               parts: [
                 {
                   text: `
-You are an AI POS system generator.
+                    ${POS_PROMPT}
 
-Return ONLY valid JSON.
-
-Structure:
-
-{
-  "categories": [],  // optional
-  "products": [
-    {
-      "id": 1,
-      "name": "",
-      "price": 0,
-      "category": "",  // only if categories exist
-      "brand": "",
-      "attributes": {}
-    }
-  ],
-  "discounts": [
-    { "name": "Default", "value": 10, "active": true },
-    { "name": "Black Friday", "value": 50, "active": false }
-  ]
-}
-
-Rules:
-
-GENERAL:
-- Adapt to the business type
-- Always generate realistic and relevant products
-
-- Include discount system:
-"discounts": [
-  { "name": "Default", "value": 10, "active": true },
-  { "name": "Black Friday", "value": 50, "active": false }
-]
-
-STRUCTURE MODES:
-
-You must decide between TWO modes:
-
-1) Categorized mode (default):
-- Include "categories" as an array of strings
-- Each product MUST have a "category"
-- Categories must be simple strings (e.g., "Tech", "Food")
-
-2) Flat mode (if user explicitly requests it):
-- Do NOT include the "categories" field
-- Do NOT include "category" inside products
-- All products belong to a single unified list
-
-Flat mode is triggered ONLY if the user clearly says:
-- "no categories"
-- "without categories"
-- "simple POS"
-- or similar instructions
-
-DATA RULES:
-
-- Categories must be an array of strings ONLY
-  Example: ["Tech", "Accessories"]
-
-- Products must:
-  - have unique ids
-  - have realistic names and prices
-  - NOT include category field in flat mode
-
-- Attributes:
-  - Clothing → include size, quantity
-  - Tech → include brand, specifications
-  - Food → include ingredients
-
-IMPORTANT:
-- Do NOT mix modes
-- If flat mode is selected → categories MUST NOT appear
-- If categorized mode → categories MUST be present
-
-User request:
-${prompt}
+                    User request:
+                    ${prompt}
                   `,
                 },
               ],
@@ -132,28 +66,28 @@ ${prompt}
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     console.log("RAW TEXT:", text);
 
-    // ✅ fallback if empty
+    // fallback if empty
     if (!text) {
-      return NextResponse.json({
-        categories: ["Default"],
-        products: [],      
-        discounts: [
-          {
-            name: "Default",
-            value: 10,
-            active: true,
-          },
-        ],
-      });
+      return NextResponse.json(
+        { error: "Failed to generate POS" },
+        { status: 500 }
+      );
     }
 
-    // ✅ clean markdown
+    // clean markdown
     text = text.replace(/```json|```/g, "").trim();
 
     try {
       const json = JSON.parse(text);
 
-      let created;
+      if (!Array.isArray(json.products)) {
+        throw new Error("Invalid products structure");
+      }
+      if (json.categories && !Array.isArray(json.categories)) {
+        throw new Error("Invalid categories structure");
+      }
+
+      let created: { id: string } | null = null;
       try {
         created = await prisma.pOS.create({
           data: {
@@ -182,29 +116,29 @@ ${prompt}
           });
         }
         console.log("✅ POS saved to DB");
+
       } catch (err) {
-        console.error("❌ Failed to save POS:", err);
+
+        console.error(
+          "POS save failed",
+          dbUser.id,
+          prompt,
+          err
+        );
+
       }
       return NextResponse.json({
         data: json,
         posId: created?.id ?? null,
       });
-
       
-    } catch (err) {
+    } catch {
       console.error("INVALID JSON:", text);
 
-      return NextResponse.json({
-        categories: ["General"],
-        products: [],
-        discounts: [
-          {
-            name: "Default",
-            value: 10,
-            active: true,
-          },
-        ],
-      });
+      return NextResponse.json(
+        { error: "Invalid AI response" },
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error("API ERROR:", error);

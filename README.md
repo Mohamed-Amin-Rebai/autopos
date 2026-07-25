@@ -271,7 +271,7 @@ Each cashier can be configured with:
 - Shift Start Time
 - Shift End Time
 - Active / Disabled Status
-- Optional IP Restriction
+- IP Restriction
 
 ---
 
@@ -311,8 +311,6 @@ Orders can be:
 Pending
 Paid
 ```
-
-Managers and Administrators can review and update order statuses.
 
 ---
 
@@ -455,7 +453,7 @@ Administrators can:
 
 - Session Management
 - Route Protection
-- Optional IP Restrictions
+- IP Restrictions
 - Shift Scheduling
 
 ---
@@ -616,7 +614,7 @@ Cashier Access
 ## Clone Project
 
 ```bash
-git clone https://github.com/your-username/autopos.git
+git clone https://github.com/Mohamed-Amin-Rebai/autopos.git
 cd autopos
 ```
 
@@ -663,8 +661,6 @@ docker compose up --build
 
 # ☁️ Deployment
 
-Recommended stack:
-
 - Frontend → Vercel
 - Database → MongoDB Atlas
 - Authentication → Clerk
@@ -674,7 +670,7 @@ Recommended stack:
 
 # 👨‍💻 Author
 
-## Mohamed Amine Rebai
+## Mohamed Amin Rebai
 
 Software Engineering Student
 

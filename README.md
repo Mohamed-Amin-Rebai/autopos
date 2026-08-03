@@ -666,6 +666,8 @@ docker compose up --build
 - Authentication → Clerk
 - AI → Gemini
 
+visit : https://autopos-platform.vercel.app/
+
 ---
 
 # 👨‍💻 Author

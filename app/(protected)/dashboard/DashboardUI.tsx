@@ -163,7 +163,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     onClick={() => router.push(`/pos/${pos.id}`)}
                     className="group/btn text-sm bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-2 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 flex items-center gap-1"
                   >
-                    Open
+                    Configure POS
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </button>
 
@@ -330,15 +330,6 @@ export default function DashboardUI({ userId }: { userId: string }) {
                       <Users className="w-3.5 h-3.5" />
                       Cashiers
                     </p>
-                    {cashiers.length > 0 && (
-                      <span className="text-[10px] text-violet-600 font-medium">
-                        {
-                          cashiers.filter(
-                            (cashier) => cashier.isActive
-                          ).length
-                        } active
-                      </span>
-                    )}
                   </div>
 
                   {cashiers.length === 0 ? (

@@ -659,14 +659,49 @@ docker compose up --build
 
 ---
 
-# ☁️ Deployment
+## ☁️ Deployment
+
+AutoPOS is deployed and publicly accessible online.
+
+### Production Environment
 
 - Frontend → Vercel
 - Database → MongoDB Atlas
 - Authentication → Clerk
-- AI → Gemini
+- AI Engine → Google Gemini
 
-visit : https://autopos-platform.vercel.app/
+### Live Application
+
+🔗 **Production URL**
+
+[Visit AutoPOS](https://autopos-platform.vercel.app)
+
+### CI/CD Pipeline
+
+The project uses a modern CI/CD workflow based on GitHub Actions and Vercel.
+
+```text
+Developer
+    ↓
+Git Push
+    ↓
+GitHub Repository
+    ↓
+GitHub Actions
+
+    • Install Dependencies
+    • Generate Prisma Client
+    • Run ESLint
+    • Run Build
+    • Validate Docker Image
+
+    ↓
+
+Vercel Deployment
+
+    ↓
+
+Production Environment
 
 ---
 

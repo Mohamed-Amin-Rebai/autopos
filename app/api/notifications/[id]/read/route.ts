@@ -1,31 +1,38 @@
 import { NextResponse } from "next/server";
-
 import { prisma } from "@/lib/prisma";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
 export async function PATCH(
-  request: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getOrCreateUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
 
+    const notification = await prisma.notification.findUnique({
+      where: { id },
+    });
+
+    if (!notification || notification.userId !== user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     await prisma.notification.update({
-      where: {
-        id,
-      },
-      data: {
-        isRead: true,
-      },
+      where: { id },
+      data: { isRead: true },
     });
 
-    return NextResponse.json({
-      success: true,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(error);
-
+    console.error("Failed to mark notification as read:", error);
     return NextResponse.json(
-      { success: false },
+      { error: "Failed to update notification" },
       { status: 500 }
     );
   }

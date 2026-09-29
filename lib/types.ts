@@ -252,3 +252,62 @@ export interface AnalyticsData {
     orders: number;
   }>;
 }
+// -----------------------------------
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
+
+export type SupportTicket = {
+  id: string;
+
+  title: string;
+  message: string;
+
+  department?: string;
+  urgency?: boolean;
+  frustration?: number;
+
+  status: TicketStatus;
+
+  createdAt: string;
+};
+
+export type JevMeta = {
+  answers?: {
+    department?: {
+      type: "choice";
+      choice: string;
+      confidence: number;
+      probabilities: Record<string, number>;
+    };
+    urgency?: {
+      type: "noul";
+      noul: number;
+    };
+    frustration?: {
+      type: "score";
+      score: number;
+      confidence: number;
+      legend: Record<string, string>;
+      probabilities: Record<string, number>;
+    };
+  };
+};
+
+export type AdminTicket = {
+  id: string;
+  title: string;
+  message: string;
+  status: TicketStatus;
+  resolution: string | null;
+  department: string | null;
+  urgency: boolean | null;
+  frustration: number | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  meta?: JevMeta | null;
+  user?: {
+    id: string;
+    email: string;
+    name: string | null;
+  } | null;
+};

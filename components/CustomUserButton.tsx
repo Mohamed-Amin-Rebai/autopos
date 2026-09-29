@@ -5,6 +5,7 @@ import {
   Users,
   BarChart3,
   Shield,
+  Ticket,
 } from "lucide-react";
 
 type Props = {
@@ -37,6 +38,13 @@ export default function CustomUserButton({
             href="/analytics"
           />
         )}
+
+        {/* Support */}
+        <UserButton.Link
+          label="Support"
+          labelIcon={<Ticket size={16} />}
+          href="/support"
+        />
 
         {/* Admin */}
         {isAdmin && (

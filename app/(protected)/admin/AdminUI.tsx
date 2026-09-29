@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminCashierRequests from "@/components/AdminCashierRequests";
+import AdminTicketsPanel from "@/components/AdminTicketsPanel";
 import { User , POSSummary , Order} from "@/lib/types";
 import { toast } from "sonner";
 import { 
@@ -12,6 +13,7 @@ import {
   CheckCircle, 
   Clock,
   ArrowUpRight,
+  Ticket
 } from "lucide-react";
 
 export default function AdminUI() {
@@ -23,21 +25,17 @@ export default function AdminUI() {
   const [selectedPOS, setSelectedPOS] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [ticketCounts, setTicketCounts] = useState({ open: 0, total: 0 });
 
-  // load users
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
 
-        const res = await fetch("/api/users");
-
-        if (!res.ok) {
-          throw new Error("Failed to load users");
-        }
-
-        const data = await res.json();
-        setUsers(data.users);
+        const usersRes = await fetch("/api/users");
+        if (!usersRes.ok) throw new Error("Failed to load users");
+        const usersData = await usersRes.json();
+        setUsers(usersData.users);
 
       } catch (err) {
         console.error(err);
@@ -47,7 +45,7 @@ export default function AdminUI() {
       }
     };
 
-    loadUsers();
+    void loadData();
   }, []);
 
   // load POS
@@ -217,6 +215,24 @@ export default function AdminUI() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Open Tickets</p>
+                <p className="text-2xl font-bold text-red-600 mt-1">
+                  {ticketCounts.open}
+                  <span className="text-sm font-normal text-gray-400 ml-1">
+                    / {ticketCounts.total}
+                  </span>
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+                <Ticket className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -419,6 +435,11 @@ export default function AdminUI() {
 
       {/* CASHIER REQUESTS */}
       <AdminCashierRequests />
+
+      {/* SUPPORT TICKETS */}
+      <div className="max-w-7xl mx-auto mt-6">
+        <AdminTicketsPanel onCountChange={setTicketCounts} />
+      </div>
 
       {/* GLOBAL LOADING */}
       {loading && (

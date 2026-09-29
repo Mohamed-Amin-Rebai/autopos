@@ -1,62 +1,32 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-
 import { prisma } from "@/lib/prisma";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
 
 export async function GET() {
   try {
-    const clerkUser = await currentUser();
-
-    if (!clerkUser) {
-      return NextResponse.json(
-        { success: false },
-        { status: 401 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: {
-        clerkId: clerkUser.id,
-      },
-    });
+    const user = await getOrCreateUser();
 
     if (!user) {
-      return NextResponse.json(
-        { success: false },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.notification.count({
+        where: { userId: user.id, isRead: false },
+      }),
+    ]);
 
-    const unreadCount = await prisma.notification.count({
-      where: {
-        userId: user.id,
-        isRead: false,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      unreadCount,
-      notifications,
-    });
-
+    return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    
-    console.error("Notifications fetch failed:",error);
+    console.error("Notifications fetch failed:", error);
     return NextResponse.json(
-      { success: false },
+      { error: "Failed to load notifications" },
       { status: 500 }
     );
-
   }
-
 }

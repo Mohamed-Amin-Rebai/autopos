@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import type { TicketStatus } from "@/lib/types";
 
 export async function GET(req: Request) {
   try {
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
     }
 
     const tickets = await prisma.supportTicket.findMany({
-      where: status ? { status: status as any } : undefined,
+      where: status ? { status: status as TicketStatus } : undefined,
       orderBy: { createdAt: "desc" },
       include: {
         user: {

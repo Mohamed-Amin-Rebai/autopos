@@ -4,6 +4,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import HeaderWrapper  from "@/components/HeaderWrapper";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +40,8 @@ export default function RootLayout({
         <body className="min-h-full flex flex-col">
           <HeaderWrapper />
           {children}
+          <Analytics />
+          <SpeedInsights />
           <Toaster position="top-right" richColors closeButton />
         </body>
       </html>

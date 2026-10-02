@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminTicket, TicketStatus } from "@/lib/types";
+import { AdminTicket } from "@/lib/types";
 import { STATUS_META } from "@/lib/ticketMeta";
 import TicketDetail from "./TicketDetail";
 import {

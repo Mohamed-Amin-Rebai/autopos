@@ -49,7 +49,7 @@ export default function ContactPage() {
               <Send className="w-4 h-4" />
             </a>
             <a
-              href="mailto:rebaiamin2003@gmail.com"
+              href="mailto:contact@smartautopos.tech"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white text-gray-700 font-medium shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-300 ring-1 ring-gray-200"
             >
               <Mail className="w-4 h-4" />
@@ -222,10 +222,10 @@ export default function ContactPage() {
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
                     <a 
-                      href="mailto:rebaiamin2003@gmail.com"
+                      href="mailto:contact@smartautopos.tech"
                       className="text-gray-700 hover:text-violet-600 transition-colors duration-200"
                     >
-                      rebaiamin2003@gmail.com
+                      contact@smartautopos.tech
                     </a>
                   </div>
                 </div>
@@ -318,11 +318,11 @@ export default function ContactPage() {
             Prefer to reach out directly? Send us an email and we&apos;ll respond promptly.
           </p>
           <a
-            href="mailto:rebaiamin2003@gmail.com"
+            href="mailto:contact@smartautopos.tech"
             className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-white text-violet-700 font-medium shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 border border-gray-200/50"
           >
             <Mail className="w-4 h-4" />
-            rebaiamin2003@gmail.com
+            contact@smartautopos.tech
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>
@@ -366,7 +366,7 @@ export default function ContactPage() {
                 <Send className="w-4 h-4" />
               </a>
               <a
-                href="mailto:rebaiamin2003@gmail.com"
+                href="mailto:contact@smartautopos.tech"
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white/10 backdrop-blur-sm text-white font-medium hover:bg-white/20 transition-all duration-300 ring-1 ring-white/30"
               >
                 <Mail className="w-4 h-4" />

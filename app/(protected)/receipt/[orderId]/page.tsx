@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import ReceiptPrintButton from "@/components/ReceiptPrintButton";
 import type { CartItem } from "@/lib/types";
 import { cookies } from "next/headers";
+import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 
 export default async function ReceiptPage({
   params,
@@ -10,30 +12,36 @@ export default async function ReceiptPage({
   params: Promise<{ orderId: string }>;
 }) {
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("cashier_session") ?.value;
-  if (!token) {
-    notFound();
-  }
-
-  const session = await prisma.cashierSession.findUnique({
-    where: {
-      token,
-    },
-  });
-
-  if (!session || session.expiresAt < new Date()) {
-    notFound();
-  }
-
   const { orderId } = await params;
+  if (!isValidObjectId(orderId)) {
+    notFound();
+  }
+
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
     },
   });
 
-  if (!order || order.cashierId !== session.cashierId) {
+  if (!order) {
+    notFound();
+  }
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("cashier_session")?.value;
+  const session = token
+    ? await prisma.cashierSession.findUnique({ where: { token } })
+    : null;
+  const cashierCanView =
+    !!session &&
+    session.expiresAt >= new Date() &&
+    session.cashierId === order.cashierId;
+  const user = await getOrCreateUser();
+  const ownerCanView =
+    !!user &&
+    (user.role === "admin" || order.userId === user.id);
+
+  if (!cashierCanView && !ownerCanView) {
     notFound();
   }
 

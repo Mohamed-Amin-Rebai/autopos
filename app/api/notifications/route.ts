@@ -21,7 +21,11 @@ export async function GET() {
       }),
     ]);
 
-    return NextResponse.json({ notifications, unreadCount });
+    return NextResponse.json({
+      success: true,
+      notifications,
+      unreadCount,
+    });
   } catch (error) {
     console.error("Notifications fetch failed:", error);
     return NextResponse.json(

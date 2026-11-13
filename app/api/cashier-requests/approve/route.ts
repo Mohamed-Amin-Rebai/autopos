@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 import type { CashierRequestConfig, GeneratedCashierCredentials } from "@/lib/types";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -20,6 +22,13 @@ export async function POST(req: Request) {
     if (!requestId) {
       return NextResponse.json(
         { error: "Request ID required" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof requestId !== "string" || !isValidObjectId(requestId)) {
+      return NextResponse.json(
+        { error: "Invalid request ID" },
         { status: 400 }
       );
     }
@@ -44,6 +53,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // fetch POS details for friendly usernames
+    const pos = await prisma.pOS.findUnique({
+      where: { id: request.posId },
+      select: { name: true },
+    });
+
+    const posSlug = (pos?.name || "pos")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 8) || "pos";
+
     // count existing cashiers for the POS to generate unique usernames
     const existingCashiersCount = await prisma.cashier.count({
       where: {
@@ -54,18 +74,28 @@ export async function POST(req: Request) {
     const cashiers: GeneratedCashierCredentials[] = [];
     const configs = request.cashierConfigs as CashierRequestConfig[];
 
-
     await prisma.$transaction(async (tx) => {
-  
       for (let i = 0; i < configs.length; i++) {
         const config = configs[i];
-        const password = Math.random().toString(36).slice(2, 10);
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Generate a secure 4-digit PIN (1000 - 9999) using crypto
+        const pin = crypto.randomInt(1000, 10000).toString();
+        const hashedPassword = await bcrypt.hash(pin, 10);
+
+        const candidateUsername = `${posSlug}_c${existingCashiersCount + i + 1}`;
+        const existingUsername = await tx.cashier.findUnique({
+          where: { username: candidateUsername },
+        });
+
+        const finalUsername = existingUsername
+          ? `${candidateUsername}_${crypto.randomBytes(2).toString("hex")}`
+          : candidateUsername;
+
         const cashier = await tx.cashier.create({
           data: {
             posId: request.posId,
-            username: `cashier_${request.posId}_${existingCashiersCount + i + 1}`,
+            username: finalUsername,
             passwordHash: hashedPassword,
+            pin,
             openingCash: config.openingCash,
             shiftStart: config.shiftStart,
             shiftEnd: config.shiftEnd,
@@ -76,7 +106,8 @@ export async function POST(req: Request) {
         cashiers.push({
           id: cashier.id,
           username: cashier.username,
-          password,
+          password: pin,
+          pin,
           url: `/cashier/${cashier.id}`,
           openingCash: cashier.openingCash,
           shiftStart: cashier.shiftStart,
@@ -93,23 +124,13 @@ export async function POST(req: Request) {
         },
       });
 
-      const pos = await tx.pOS.findUnique({
-        where: {
-          id: request.posId,
-        },
-        select: {
-          name: true,
-        },
-      });
-
       await tx.notification.create({
         data: {
           userId: request.ownerId,
           title: "Cashier Request Approved",
-          message: `Your cashier request for "${pos?.name ?? request.posId}" has been approved and cashier accounts were generated.`,
+          message: `Your cashier request for "${pos?.name ?? request.posId}" was approved! ${configs.length} cashier account(s) have been generated. You can view usernames, PINs, and reset credentials anytime in the Cashiers tab.`,
         },
       });
-
     });
 
     return NextResponse.json({

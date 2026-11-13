@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { PLAN_POS_PROMPT } from "@/lib/prompts/plan-pos";
+import { planPOS } from "@/lib/gemini";
+import {
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 
 
 export async function POST(req: Request) {
@@ -11,6 +16,19 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
+    );
+  }
+
+  try {
+    const rateLimit = await checkRateLimit("ai", user.id);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
+    }
+  } catch (error) {
+    console.error("Plan POS rate limiter error:", error);
+    return NextResponse.json(
+      { error: "Rate limiting service unavailable" },
+      { status: 503 }
     );
   }
 
@@ -39,52 +57,19 @@ export async function POST(req: Request) {
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `
-                    ${PLAN_POS_PROMPT}
+    const message = await planPOS(`
+      ${PLAN_POS_PROMPT}
 
-                    User instruction:
-                    "${instruction}"
-                  `,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+      User instruction:
+      "${instruction}"
+    `);
 
-    if (!response.ok) {
-      throw new Error("Gemini request failed");
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    return NextResponse.json({ message: text });
-
+    return NextResponse.json({ message });
   } catch (error) {
-
     console.error("Plan POS error:", error);
     return NextResponse.json(
-      {
-        error: "Failed to plan action",
-      },
-      {
-        status: 500,
-      }
+      { error: "Failed to plan action" },
+      { status: 502 },
     );
-
   }
 }

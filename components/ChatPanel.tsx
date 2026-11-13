@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { ChatMessage, ChatPanelProps} from "@/lib/types";
+import type {
+  ChatMessage,
+  ChatPanelProps,
+  HistoryVersion,
+} from "@/lib/types";
 import { Bot, User, Send, History, CheckCircle } from "lucide-react";
 
 export default function ChatPanel({
   data,
+  posId,
   onUpdate,
+  onAutoSave,
+  onHistoryUpdate,
   historyFromDB,
 }: ChatPanelProps) {
 
@@ -51,11 +58,16 @@ export default function ChatPanel({
         try {
           const res = await fetch("/api/update-pos", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               currentData: data,
               instruction: pendingInstruction,
             }),
           });
+
+          if (!res.ok) {
+            throw new Error("POS update failed");
+          }
 
           const updated = await res.json();
           
@@ -71,10 +83,16 @@ export default function ChatPanel({
           }
 
           onUpdate(updated);
+          const saved = await onAutoSave(updated);
 
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", text: "✅ Update applied." },
+            {
+              role: "assistant",
+              text: saved
+                ? "✅ Update applied and saved."
+                : "⚠️ Update applied locally, but saving failed.",
+            },
           ]);
 
           setPendingInstruction(null);
@@ -107,11 +125,16 @@ export default function ChatPanel({
     try {
       const res = await fetch("/api/plan-pos", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction: instructionRaw }),
       });
 
       const result = await res.json();
       setMessages((prev) => prev.slice(0, -1));
+
+      if (!res.ok || typeof result.message !== "string") {
+        throw new Error("POS plan failed");
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -126,6 +149,58 @@ export default function ChatPanel({
       setMessages((prev) => [
         ...prev,
         { role: "assistant", text: "❌ Failed" },
+      ]);
+    }
+  };
+
+  const selectedHistory: HistoryVersion | null =
+    selectedVersion === null ? null : history[selectedVersion] ?? null;
+  const isSelectedCurrent =
+    selectedVersion !== null && selectedVersion === currentVersionIndex;
+  const selectedProducts = selectedHistory
+    ? new Map(selectedHistory.data.products.map((product) => [product.id, product]))
+    : new Map();
+  const currentProducts = new Map(data.products.map((product) => [product.id, product]));
+  const addedProducts = [...selectedProducts.keys()]
+    .filter((id) => !currentProducts.has(id)).length;
+  const removedProducts = [...currentProducts.keys()]
+    .filter((id) => !selectedProducts.has(id)).length;
+  const changedProducts = [...selectedProducts.keys()]
+    .filter((id) => {
+      const currentProduct = currentProducts.get(id);
+      const selectedProduct = selectedProducts.get(id);
+      return currentProduct &&
+        selectedProduct &&
+        JSON.stringify(currentProduct) !== JSON.stringify(selectedProduct);
+    }).length;
+
+  const restoreSelectedVersion = async () => {
+    if (selectedVersion === null || isSelectedCurrent) return;
+
+    try {
+      const res = await fetch(`/api/pos/${posId}/rollback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ historyIndex: selectedVersion }),
+      });
+      const response = await res.json();
+
+      if (!res.ok) {
+        throw new Error(response.error || "Rollback failed");
+      }
+
+      onUpdate(response.current, false);
+      onHistoryUpdate(response.history);
+      setSelectedVersion(response.history.length - 1);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "✅ Version restored." },
+      ]);
+    } catch (error) {
+      console.error("POS rollback failed:", error);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "❌ Failed to restore version." },
       ]);
     }
   };
@@ -200,6 +275,38 @@ export default function ChatPanel({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {selectedHistory && (
+        <div className="px-3 py-3 border-b border-indigo-100 bg-indigo-50/60">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-indigo-900 truncate">
+                Preview: {selectedHistory.label}
+              </p>
+              <p className="text-[11px] text-indigo-700 mt-1">
+                {selectedHistory.data.products.length} products,{" "}
+                {selectedHistory.data.categories?.length ?? 0} categories,{" "}
+                {selectedHistory.data.discounts?.length ?? 0} discounts
+              </p>
+              {!isSelectedCurrent && (
+                <p className="text-[11px] text-indigo-600 mt-1">
+                  Difference: {addedProducts} added, {removedProducts} removed,{" "}
+                  {changedProducts} changed products
+                </p>
+              )}
+            </div>
+            {!isSelectedCurrent && (
+              <button
+                type="button"
+                onClick={restoreSelectedVersion}
+                className="flex-shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-700"
+              >
+                Restore
+              </button>
+            )}
           </div>
         </div>
       )}

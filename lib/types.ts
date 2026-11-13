@@ -60,11 +60,13 @@ export type POSData = {
 export type Cashier = {
   id: string;
   username: string;
+  pin?: string | null;
   openingCash: number;
   shiftStart: string | null;
   shiftEnd: string | null;
   allowedIp?: string;
   isActive: boolean;
+  lockedUntil?: string | null;
   createdAt: string;
 };
 
@@ -153,6 +155,18 @@ export type POSSummary = {
   name: string;
   createdAt: string;
 };
+
+export type DashboardPOS = POSSummary & {
+  orders: Order[];
+  cashiers: CashierSummary[];
+  stats: {
+    totalOrders: number;
+    pendingOrders: number;
+    paidOrders: number;
+    revenue: number;
+    averageOrderValue: number;
+  };
+};
 // -----------------------------------
 export type Notification = {
   id: string;
@@ -166,6 +180,7 @@ export type GeneratedCashierCredentials = {
   id: string;
   username: string;
   password: string;
+  pin?: string;
   url: string;
   openingCash: number;
   shiftStart: string | null;
@@ -179,20 +194,22 @@ export type ChatMessage = {
 
 export type HistoryVersion = {
   label: string;
+  data: POSData;
+  createdAt?: string;
 };
 
 export type ChatPanelProps = {
   data: POSData;
-  onUpdate: (data: POSData) => void;
+  posId: string;
+  onUpdate: (data: POSData, markDirty?: boolean) => void;
+  onAutoSave: (data: POSData) => Promise<boolean>;
+  onHistoryUpdate: (history: HistoryVersion[]) => void;
   historyFromDB: HistoryVersion[];
 };
 // -----------------------------------
 export type POSStoredData = {
   current: POSData;
-  history: {
-    label: string;
-    data: POSData;
-  }[];
+  history: HistoryVersion[];
 };
 // -----------------------------------
 export type AnalyticsProduct = {
@@ -211,6 +228,7 @@ export type CashierConfig = {
   openingCash: number;
   shiftStart: string;
   shiftEnd: string;
+  allowedIp: string;
 };
 // -----------------------------------
 export type CashierSummary = {

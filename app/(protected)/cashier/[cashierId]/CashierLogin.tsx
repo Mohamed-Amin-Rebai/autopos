@@ -24,10 +24,12 @@ export default function CashierLogin(
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const login = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
 
       const res = await fetch("/api/cashier-login", {
         method: "POST",
@@ -44,7 +46,9 @@ export default function CashierLogin(
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Login failed");
+        const errorText = data.error || "Login failed";
+        setErrorMessage(errorText);
+        toast.error(errorText);
         return;
       }
 
@@ -52,6 +56,7 @@ export default function CashierLogin(
 
     } catch (err) {
       console.error(err);
+      setErrorMessage("Network error: failed to connect to terminal");
       toast.error("Login failed");
     } finally {
       setLoading(false);
@@ -113,20 +118,29 @@ export default function CashierLogin(
               />
             </div>
 
-            {/* Password Input */}
+            {/* PIN / Password Input */}
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2">
                 <Lock className="w-5 h-5 text-gray-400" />
               </div>
               <input
                 type="password"
-                placeholder="Password"
+                inputMode="numeric"
+                pattern="[0-9]{4,6}"
+                maxLength={6}
+                placeholder="4-6 Digit PIN or Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && login()}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3.5 pl-11 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white placeholder:text-gray-400"
               />
             </div>
+
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200/80 rounded-xl p-3 text-xs text-red-700 leading-relaxed animate-in fade-in">
+                {errorMessage}
+              </div>
+            )}
 
             {/* Login Button */}
             <button

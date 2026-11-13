@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 
 const VALID_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"] as const;
 type TicketStatus = (typeof VALID_STATUSES)[number];
@@ -10,13 +11,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid ticket ID" }, { status: 400 });
+    }
+
     const user = await getOrCreateUser();
 
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-
-    const { id } = await params;
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id },
@@ -46,13 +50,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid ticket ID" }, { status: 400 });
+    }
+
     const user = await getOrCreateUser();
 
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { id } = await params;
     const body = await req.json();
 
     const status: TicketStatus | undefined = body.status;

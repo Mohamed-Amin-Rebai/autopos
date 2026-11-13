@@ -10,11 +10,27 @@ export async function getOrCreateUser() {
     where: { clerkId: clerkUser.id },
   });
 
-  if (existing) return existing;
-
-  const email = clerkUser.emailAddresses[0]?.emailAddress;
+  const email =
+    clerkUser.emailAddresses.find(
+      (address) => address.id === clerkUser.primaryEmailAddressId
+    )?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
   if (!email) {
     throw new Error("Clerk user has no email address");
+  }
+
+  const name = [clerkUser.firstName, clerkUser.lastName]
+    .filter(Boolean)
+    .join(" ") || null;
+
+  if (existing) {
+    if (existing.email === email && existing.name === name) {
+      return existing;
+    }
+
+    return prisma.user.update({
+      where: { id: existing.id },
+      data: { email, name },
+    });
   }
 
   try {
@@ -22,7 +38,7 @@ export async function getOrCreateUser() {
       data: {
         clerkId: clerkUser.id,
         email,
-        name: clerkUser.firstName ?? null,
+        name,
       },
     });
   } catch (err) {

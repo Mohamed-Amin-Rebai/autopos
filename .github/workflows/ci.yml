@@ -12,6 +12,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: mongodb://127.0.0.1:27017/autopos
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZHVtbXlfY2xlcms
+      CLERK_SECRET_KEY: sk_test_dummy
+      GEMINI_API_KEY: dummy
+      TYPESAFE_API_KEY: dummy
 
     steps:
       - name: Checkout Repository
@@ -23,7 +29,7 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma Client
         run: npx prisma generate
@@ -35,4 +41,11 @@ jobs:
         run: npm run build
 
       - name: Build Docker Image
-        run: docker build -t autopos .
+        run: >
+          docker build -t autopos
+          --build-arg DATABASE_URL="${{ env.DATABASE_URL }}"
+          --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="${{ env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}"
+          --build-arg CLERK_SECRET_KEY="${{ env.CLERK_SECRET_KEY }}"
+          --build-arg GEMINI_API_KEY="${{ env.GEMINI_API_KEY }}"
+          --build-arg TYPESAFE_API_KEY="${{ env.TYPESAFE_API_KEY }}"
+          .

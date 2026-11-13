@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LifeBuoy,
   Send,
@@ -62,7 +62,7 @@ export default function SupportPage() {
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
-  async function loadTickets() {
+  const loadTickets = useCallback(async () => {
     try {
       setTicketsLoading(true);
       const res = await fetch("/api/tickets");
@@ -74,11 +74,15 @@ export default function SupportPage() {
     } finally {
       setTicketsLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadTickets();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void loadTickets();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadTickets]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

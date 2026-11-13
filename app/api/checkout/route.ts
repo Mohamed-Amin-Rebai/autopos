@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import type { CartItem } from "@/lib/types";
+import type { CartItem, POSData, POSStoredData, Product } from "@/lib/types";
+import { recordPaidOrder } from "@/lib/analyticsSummary";
 
 export async function POST(req: Request) {
   try {
@@ -74,6 +75,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!/^[0-9a-fA-F]{24}$/.test(posId)) {
+      return NextResponse.json(
+        { error: "Invalid POS ID" },
+        { status: 400 }
+      );
+    }
+
     // validate bank payment details
     if (paymentMethod !== "cash" && paymentMethod !== "bank") {
       return NextResponse.json(
@@ -90,23 +98,6 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-    }
-
-    // calculate order totals
-    const subtotal = cart.reduce(
-      (sum: number, item: CartItem) =>
-        sum + item.product.price * item.quantity,
-      0
-    );
-    const discountValue = discount?.value || 0;
-    const total = subtotal - (subtotal * discountValue) / 100;
-
-    // prevent invalid or manipulated totals
-    if (total <= 0) {
-      return NextResponse.json(
-        { error: "Invalid total" },
-        { status: 400 }
-      );
     }
 
     // verify cashier POS exists
@@ -128,6 +119,54 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Invalid POS" },
         { status: 403 }
+      );
+    }
+
+    const storedData = pos.data as POSStoredData;
+    const posData = storedData.current as POSData;
+    const productsById = new Map(
+      (posData.products ?? []).map((product) => [product.id, product])
+    );
+    const verifiedCart: CartItem[] = [];
+
+    for (const item of cart as CartItem[]) {
+      const product = item?.product;
+      const quantity = item?.quantity;
+      const verifiedProduct = product?.id !== undefined
+        ? productsById.get(product.id)
+        : undefined;
+
+      if (
+        !verifiedProduct ||
+        !Number.isInteger(quantity) ||
+        quantity <= 0
+      ) {
+        return NextResponse.json(
+          { error: "Invalid cart item" },
+          { status: 400 }
+        );
+      }
+
+      verifiedCart.push({ product: verifiedProduct as Product, quantity });
+    }
+
+    const activeDiscount = posData.discounts?.find(
+      (candidate) =>
+        candidate.active &&
+        candidate.name === discount?.name &&
+        candidate.value === discount?.value
+    );
+    const discountValue = activeDiscount?.value ?? 0;
+    const subtotal = verifiedCart.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
+    const total = subtotal - (subtotal * discountValue) / 100;
+
+    if (total <= 0) {
+      return NextResponse.json(
+        { error: "Invalid total" },
+        { status: 400 }
       );
     }
 
@@ -157,9 +196,11 @@ export async function POST(req: Request) {
         userId,
         posId,
         cashierId: cashier.id,
-        items: cart,
+        items: JSON.parse(JSON.stringify(verifiedCart)),
         total,
-        discount,
+        discount: activeDiscount
+          ? { name: activeDiscount.name, value: activeDiscount.value }
+          : null,
         idempotencyKey,
         receiptNumber,
         status:
@@ -172,6 +213,10 @@ export async function POST(req: Request) {
             : null,
       },
     });
+
+    if (createdOrder.status === "paid") {
+      await recordPaidOrder(createdOrder);
+    }
 
     // return receipt information
     return NextResponse.json({

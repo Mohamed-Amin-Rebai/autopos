@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { User2, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminTicket, TicketStatus } from "@/lib/types";
@@ -18,12 +18,6 @@ export default function TicketDetail({
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
   const [resolution, setResolution] = useState(ticket.resolution ?? "");
   const [saving, setSaving] = useState(false);
-
-  // If parent re-fetches and ticket prop changes, resync
-  useEffect(() => {
-    setStatus(ticket.status);
-    setResolution(ticket.resolution ?? "");
-  }, [ticket.status, ticket.resolution]);
 
   const dirty =
     status !== ticket.status || resolution !== (ticket.resolution ?? "");

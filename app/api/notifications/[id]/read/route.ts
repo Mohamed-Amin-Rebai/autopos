@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 
 export async function PATCH(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { error: "Invalid notification ID" },
+        { status: 400 }
+      );
+    }
+
     const user = await getOrCreateUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { id } = await params;
 
     const notification = await prisma.notification.findUnique({
       where: { id },

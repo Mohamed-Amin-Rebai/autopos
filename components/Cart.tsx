@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Wallet, Banknote, X } from "lucide-react";
 import { toast } from "sonner";
 import type {
@@ -24,7 +25,7 @@ export default function Cart({
   const [processing, setProcessing] = useState(false);
   const [accountName, setAccountName] = useState("");
   const [accountNumber , setAccountNumber ] = useState("");
-  const [idempotencyKey] = useState(() =>
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
     crypto.randomUUID()
   );
   const router = useRouter();
@@ -102,6 +103,7 @@ export default function Cart({
       setAccountNumber("");
       setShowPayment(false);
       onClearCart();
+      setIdempotencyKey(crypto.randomUUID());
 
       router.push(`/receipt/${data.orderId}`);
 
@@ -158,9 +160,12 @@ export default function Cart({
               {/* Mini image */}
               <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200/50 overflow-hidden">
                 {item.product.image ? (
-                  <img 
+                  <Image
                     src={item.product.image} 
                     alt={item.product.name}
+                    width={48}
+                    height={48}
+                    unoptimized
                     className="w-full h-full object-cover"
                   />
                 ) : (

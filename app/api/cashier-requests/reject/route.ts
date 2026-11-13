@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,13 @@ export async function POST(req: Request) {
     if (!requestId) {
       return NextResponse.json(
         { error: "Request ID required" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof requestId !== "string" || !isValidObjectId(requestId)) {
+      return NextResponse.json(
+        { error: "Invalid request ID" },
         { status: 400 }
       );
     }

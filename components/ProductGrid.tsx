@@ -1,4 +1,5 @@
 import { Package as PackageIcon } from "lucide-react";
+import Image from "next/image";
 import type { Product, ProductGridProps } from "@/lib/types";
 
 export default function ProductGrid({
@@ -47,9 +48,12 @@ export default function ProductGrid({
           {/* IMAGE */}
           <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50">
             {p.image ? (
-              <img
+              <Image
                 src={p.image}
                 alt={p.name}
+                width={320}
+                height={112}
+                unoptimized
                 className="h-28 w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
             ) : (

@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { POS_PROMPT } from "@/lib/prompts/pos";
+import { generatePOS } from "@/lib/gemini";
+import type { Prisma } from "@prisma/client";
+import {
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -22,6 +28,19 @@ export async function POST(req: Request) {
     );
   }
 
+  try {
+    const rateLimit = await checkRateLimit("ai", dbUser.id);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
+    }
+  } catch (error) {
+    console.error("Generate rate limiter error:", error);
+    return NextResponse.json(
+      { error: "Rate limiting service unavailable" },
+      { status: 503 }
+    );
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
       { error: "AI service unavailable" },
@@ -30,125 +49,43 @@ export async function POST(req: Request) {
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `
-                    ${POS_PROMPT}
+    const data = await generatePOS(`
+      ${POS_PROMPT}
 
-                    User request:
-                    ${prompt}
-                  `,
-                },
-              ],
+      User request:
+      ${prompt}
+    `);
+
+    const created = await prisma.pOS.create({
+      data: {
+        userId: dbUser.id,
+        name: prompt.slice(0, 50),
+        data: {
+          current: data,
+          history: [
+            {
+              label: "Initial POS",
+              data,
+              createdAt: new Date().toISOString(),
             },
           ],
-        }),
-      }
-    );
+        } as Prisma.InputJsonValue,
+      },
+    });
 
-    if (!response.ok) {
-      throw new Error("Gemini request failed");
-    }
-
-    const data = await response.json();
-    console.log("FULL GEMINI RESPONSE:", data);
-
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    console.log("RAW TEXT:", text);
-
-    // fallback if empty
-    if (!text) {
-      return NextResponse.json(
-        { error: "Failed to generate POS" },
-        { status: 500 }
-      );
-    }
-
-    // clean markdown
-    text = text.replace(/```json|```/g, "").trim();
-
-    try {
-      const json = JSON.parse(text);
-
-      if (!Array.isArray(json.products)) {
-        throw new Error("Invalid products structure");
-      }
-      if (json.categories && !Array.isArray(json.categories)) {
-        throw new Error("Invalid categories structure");
-      }
-
-      let created: { id: string } | null = null;
-      try {
-        created = await prisma.pOS.create({
-          data: {
-            userId: dbUser.id,
-            name: prompt.slice(0, 50),
-            data: {
-              current: json,
-              history: [
-                {
-                  label: "Initial POS",
-                  data: json,
-                },
-              ],
-            },
-          },
-        });
-
-        if (dbUser.role === "user") {
-          await prisma.user.update({
-            where: {
-              id: dbUser.id,
-            },
-            data: {
-              role: "manager",
-            },
-          });
-        }
-        console.log("✅ POS saved to DB");
-
-      } catch (err) {
-
-        console.error(
-          "POS save failed",
-          dbUser.id,
-          prompt,
-          err
-        );
-
-      }
-      return NextResponse.json({
-        data: json,
-        posId: created?.id ?? null,
-      });
-      
-    } catch {
-      console.error("INVALID JSON:", text);
-
-      return NextResponse.json(
-        { error: "Invalid AI response" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      data,
+      posId: created.id,
+    });
   } catch (error) {
     console.error("API ERROR:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to generate POS",
+        error: "Failed to generate or save POS",
       },
       {
-        status: 500,
+        status: 502,
       }
     );
   }

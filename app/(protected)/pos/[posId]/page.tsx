@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
@@ -24,13 +24,14 @@ export default function POSPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving , setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const router = useRouter();
   
   const params = useParams();
   const posId = params.posId as string;
 
-  const loadPOS = async () => {
+  const loadPOS = useCallback(async () => {
     if (!posId) {
       router.push("/");
       return null;
@@ -45,13 +46,14 @@ export default function POSPage() {
 
     setData(response.current);
     setHistoryFromDB(response.history || []);
+    setIsDirty(false);
 
     if (response.current.categories?.length) {
       setSelectedCategory(response.current.categories[0]);
     }
     
     return response;
-  }
+  }, [posId, router]);
 
   useEffect(() => {
     const fetchPOS = async () => {
@@ -67,7 +69,18 @@ export default function POSPage() {
     };
 
     fetchPOS();
-  }, [posId]);
+  }, [loadPOS, router]);
+
+  useEffect(() => {
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isDirty]);
 
   if (loading) {
     return (
@@ -144,6 +157,9 @@ export default function POSPage() {
   };
 
   const goBack = () => {
+    if (isDirty && !window.confirm("You have unsaved changes. Leave without saving?")) {
+      return;
+    }
     router.push("/");
   };
 
@@ -161,10 +177,10 @@ export default function POSPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSave = async () => {
+  const saveData = async (dataToSave: POSData, showToast = true): Promise<boolean> => {
     if (!posId) {
-      toast.error("Missing POS ID");
-      return;
+      if (showToast) toast.error("Missing POS ID");
+      return false;
     }
 
     try {
@@ -176,7 +192,7 @@ export default function POSPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          data,
+          data: dataToSave,
           posId,
         }),
       });
@@ -187,17 +203,25 @@ export default function POSPage() {
 
       const updated = await loadPOS();
       if (!updated) {
-        toast.error("Failed to refresh POS after save");
-        return;
+        if (showToast) toast.error("Failed to refresh POS after save");
+        return false;
       }
 
-      toast.success("POS saved successfully");
+      if (showToast) toast.success("POS saved successfully");
+      return true;
 
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save POS");
+      if (showToast) toast.error("Failed to save POS");
+      return false;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (data) {
+      await saveData(data);
     }
   };
 
@@ -246,6 +270,11 @@ export default function POSPage() {
               </>
             )}
           </button>
+          {isDirty && (
+            <span className="text-xs font-medium text-amber-600">
+              Unsaved changes
+            </span>
+          )}
 
         </div>
       </div>
@@ -296,8 +325,14 @@ export default function POSPage() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
           <ChatPanel
             data={data}
+            posId={posId}
             historyFromDB={historyFromDB}
-            onUpdate={(newData: POSData) => setData(newData)}
+            onUpdate={(newData: POSData, markDirty = true) => {
+              setData(newData);
+              setIsDirty(markDirty);
+            }}
+            onAutoSave={(newData: POSData) => saveData(newData, false)}
+            onHistoryUpdate={setHistoryFromDB}
           />
         </div>
       </div>

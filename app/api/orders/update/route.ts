@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
+import { recordPaidOrder } from "@/lib/analyticsSummary";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +23,13 @@ export async function POST(req: Request) {
     if (!orderId) {
       return NextResponse.json(
         { error: "Missing orderId" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof orderId !== "string" || !isValidObjectId(orderId)) {
+      return NextResponse.json(
+        { error: "Invalid order ID" },
         { status: 400 }
       );
     }
@@ -50,6 +59,8 @@ export async function POST(req: Request) {
         status: "paid",
       },
     });
+
+    await recordPaidOrder(updatedOrder);
 
     return NextResponse.json({
       success: true,

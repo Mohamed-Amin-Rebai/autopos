@@ -216,7 +216,7 @@ export default function FeaturesPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mt-16">
-            {benefits.map((benefit, index) => {
+            {benefits.map((benefit) => {
               const Icon = benefit.icon;
               return (
                 <div

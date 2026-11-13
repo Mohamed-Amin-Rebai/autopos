@@ -15,11 +15,12 @@ model User {
   role      String   @default("user") // user | manager | admin
   createdAt DateTime @default(now())
 
-  pos    POS[]
-  orders Order[]
-  tickets SupportTicket[]
-  notifications Notification[]
-  cashierRequests CashierRequest[]
+  pos                POS[]
+  orders             Order[]
+  tickets            SupportTicket[]
+  notifications      Notification[]
+  cashierRequests    CashierRequest[]
+  analyticsSummaries AnalyticsSummary[]
 }
 
 model POS {
@@ -29,10 +30,11 @@ model POS {
   data      Json
   createdAt DateTime @default(now())
 
-  user   User    @relation(fields: [userId], references: [id])
-  orders Order[]
-  cashiers Cashier[]
-  cashierRequests CashierRequest[]
+  user               User               @relation(fields: [userId], references: [id])
+  orders             Order[]
+  cashiers           Cashier[]
+  cashierRequests    CashierRequest[]
+  analyticsSummaries AnalyticsSummary[]
 }
 
 enum OrderStatus {
@@ -51,38 +53,47 @@ model Order {
   discount       Json?
   paymentDetails Json?
   status         OrderStatus @default(pending)
-  idempotencyKey String? @unique
-  receiptNumber String @unique
+  idempotencyKey String?     @unique
+  receiptNumber  String      @unique
   createdAt      DateTime    @default(now())
-  
-  user User @relation(fields: [userId], references: [id])
-  pos  POS  @relation(fields: [posId], references: [id])
+
+  user    User     @relation(fields: [userId], references: [id])
+  pos     POS      @relation(fields: [posId], references: [id])
   cashier Cashier? @relation(fields: [cashierId], references: [id])
+
+  @@index([userId])
+  @@index([posId, status, createdAt])
+  @@index([cashierId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Cashier {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   posId String @db.ObjectId
-  pos POS @relation(fields: [posId], references: [id])
+  pos   POS    @relation(fields: [posId], references: [id])
 
-  username     String @unique
+  username     String  @unique
   passwordHash String
+  pin          String? // 4-6 digit numeric PIN visible to manager
 
   fullName String?
 
   openingCash Float
-  shiftStart String?
-  shiftEnd String?
+  shiftStart  String?
+  shiftEnd    String?
 
-  isActive Boolean @default(true)
-  allowedIp String?
-  sessions CashierSession[]
-  orders Order[]
+  isActive       Boolean          @default(true)
+  allowedIp      String?
+  failedAttempts Int              @default(0)
+  lockedUntil    DateTime?
+  sessions       CashierSession[]
+  orders         Order[]
 
   createdAt DateTime @default(now())
-}
 
+  @@index([posId, isActive, createdAt])
+}
 
 model CashierSession {
   id String @id @default(auto()) @map("_id") @db.ObjectId
@@ -95,7 +106,7 @@ model CashierSession {
 
   createdAt DateTime @default(now())
 
-  cashier Cashier @relation(fields: [cashierId],references: [id])
+  cashier Cashier @relation(fields: [cashierId], references: [id])
 }
 
 enum CashierRequestStatus {
@@ -111,7 +122,7 @@ model CashierRequest {
   posId   String @db.ObjectId
 
   requestedCashiers Int
-  cashierConfigs Json
+  cashierConfigs    Json
 
   status CashierRequestStatus @default(pending)
 
@@ -119,21 +130,26 @@ model CashierRequest {
 
   owner User @relation(fields: [ownerId], references: [id])
   pos   POS  @relation(fields: [posId], references: [id])
+
+  @@index([ownerId, status, createdAt])
+  @@index([posId, status, createdAt])
 }
 
 model Notification {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
-  title     String
-  message   String
+  title   String
+  message String
 
-  ticketId  String?  @db.ObjectId
-  isRead    Boolean @default(false)
+  ticketId String? @db.ObjectId
+  isRead   Boolean @default(false)
 
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
 }
 
 enum SupportTicketStatus {
@@ -143,22 +159,47 @@ enum SupportTicketStatus {
 }
 
 model SupportTicket {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId       String   @db.ObjectId
-  user         User     @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
-  title        String
-  message      String
+  title   String
+  message String
 
-  department   String?
-  urgency      Boolean?
-  frustration  Int?
-  meta         Json?
+  department  String?
+  urgency     Boolean?
+  frustration Int?
+  meta        Json?
 
-  status       SupportTicketStatus   @default(OPEN)
-  resolution   String?
+  status     SupportTicketStatus @default(OPEN)
+  resolution String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model AnalyticsSummary {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  posId             String   @db.ObjectId
+  date              DateTime
+  revenue           Float    @default(0)
+  orderCount        Int      @default(0)
+  productStats      Json
+  categoryStats     Json
+  hourlyStats       Json
+  cashierStats      Json
+  processedOrderIds Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  pos  POS  @relation(fields: [posId], references: [id])
+
+  @@unique([posId, date])
+  @@index([userId, date])
 }

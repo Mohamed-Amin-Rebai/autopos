@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {features, steps} from "@/lib/landing-data";
 import { 
@@ -145,9 +146,11 @@ export default function Home() {
             whileHover={{ scale: 1.01 }}
             className="relative rounded-2xl overflow-hidden shadow-2xl shadow-violet-500/10 border border-gray-200/50"
           >
-            <img
+            <Image
               src="/landingpage.png"
               alt="AutoPOS Preview"
+              width={1536}
+              height={1024}
               className="w-full h-auto object-cover"
             />
             

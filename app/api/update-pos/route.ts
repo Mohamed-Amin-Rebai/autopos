@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { UPDATE_POS_PROMPT } from "@/lib/prompts/update-pos";
+import { generatePOS } from "@/lib/gemini";
+import {
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 
 
 export async function POST(req: Request) {
@@ -11,6 +16,19 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
+    );
+  }
+
+  try {
+    const rateLimit = await checkRateLimit("ai", user.id);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
+    }
+  } catch (error) {
+    console.error("Update POS rate limiter error:", error);
+    return NextResponse.json(
+      { error: "Rate limiting service unavailable" },
+      { status: 503 }
     );
   }
 
@@ -46,75 +64,26 @@ export async function POST(req: Request) {
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `
-                    ${UPDATE_POS_PROMPT}
+    const data = await generatePOS(`
+      ${UPDATE_POS_PROMPT}
 
-                    Current POS:
-                    ${JSON.stringify(currentData)}
+      Current POS:
+      ${JSON.stringify(currentData)}
 
-                    Instruction:
-                    "${instruction}"
-                  `,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+      Instruction:
+      "${instruction}"
+    `);
 
-    if (!response.ok) {
-      throw new Error("Gemini request failed");
-    }
-
-    const data = await response.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    
-    if (!text) {
-      return NextResponse.json(currentData);
-    }
-
-    // clean markdown
-    text = text.replace(/```json|```/g, "").trim();
-
-    try {
-
-      const json = JSON.parse(text);
-      if (
-        !Array.isArray(json.categories) ||
-        !Array.isArray(json.products)
-      ) {
-        throw new Error("Invalid structure");
-      }
-      return NextResponse.json(json);
-
-    } catch {
-
-      console.error("INVALID JSON:", text);
-      return NextResponse.json(currentData);
-
-    }
-
+    return NextResponse.json(data);
   } catch (error) {
-
     console.error(
       "Update POS failed",
       instruction,
       error
     );
-    return NextResponse.json(currentData);
-
+    return NextResponse.json(
+      { error: "Failed to update POS" },
+      { status: 502 },
+    );
   }
 }

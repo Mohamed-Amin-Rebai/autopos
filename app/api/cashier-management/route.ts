@@ -43,10 +43,12 @@ export async function GET() {
       select: {
         id: true,
         username: true,
+        pin: true,
         openingCash: true,
         shiftStart: true,
         shiftEnd: true,
         isActive: true,
+        lockedUntil: true,
         createdAt: true,
         posId: true,
       },

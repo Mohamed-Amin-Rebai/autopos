@@ -2,16 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, DollarSign, Package, Clock, CheckCircle, ArrowRight, Loader2, Users } from "lucide-react";
-import { Order, POSSummary, CashierSummary } from "@/lib/types";
+import { ShoppingBag, DollarSign, Package, Clock, ArrowRight, Loader2, Users } from "lucide-react";
+import { Order, DashboardPOS } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function DashboardUI({ userId }: { userId: string }) {
-  const [posList, setPosList] = useState<POSSummary[]>([]);
-  const [ordersMap, setOrdersMap] = useState<Record<string, Order[]>>({});
+  const [posList, setPosList] = useState<DashboardPOS[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [cashiersMap, setCashiersMap] = useState<Record<string, CashierSummary[]>>({});
 
   const router = useRouter();
 
@@ -20,29 +17,14 @@ export default function DashboardUI({ userId }: { userId: string }) {
       try {
         setLoading(true);
 
-        const res = await fetch(`/api/pos/user/${userId}`);
+        const res = await fetch("/api/dashboard");
+        if (!res.ok) {
+          throw new Error(`Dashboard request failed with status ${res.status}`);
+        }
         const data = await res.json();
 
-        const posList = data.posList || [];
+        const posList: DashboardPOS[] = data.posList || [];
         setPosList(posList);
-
-        const ordersEntries = await Promise.all(
-          posList.map(async (pos: POSSummary) => {
-            const res = await fetch(`/api/orders/${pos.id}`);
-            const ordersResponse = await res.json();
-            return [pos.id, ordersResponse.orders ?? ordersResponse,];
-          })
-        );
-        setOrdersMap(Object.fromEntries(ordersEntries));
-
-        const cashierEntries = await Promise.all(
-          posList.map(async (pos: POSSummary) => {
-            const res = await fetch(`/api/cashiers/${pos.id}`);
-            const cashiersResponse = await res.json();
-            return [pos.id, cashiersResponse.cashiers ?? cashiersResponse];
-          })
-        );
-        setCashiersMap(Object.fromEntries(cashierEntries));
 
       } catch (err) {
         console.error("POS Systems load error:", err);
@@ -121,19 +103,8 @@ export default function DashboardUI({ userId }: { userId: string }) {
         <div className="grid md:grid-cols-2 gap-6">
 
           {posList.map((pos) => {
-            // const orders = ordersMap[pos.id] || [];
-            const orders = Array.isArray(ordersMap[pos.id])
-              ? ordersMap[pos.id]
-              : [];
-            const cashiers = cashiersMap[pos.id] || [];
-
-            const totalRevenue = orders.reduce(
-              (sum: number, o: Order) => sum + o.total,
-              0
-            );
-
-            const pendingOrders = orders.filter((o: Order) => o.status === "pending").length;
-            const paidOrders = orders.filter((o: Order) => o.status === "paid").length;
+            const { orders, cashiers } = pos;
+            const { revenue: totalRevenue, pendingOrders, paidOrders } = pos.stats;
 
             return (
               <div
@@ -189,7 +160,7 @@ export default function DashboardUI({ userId }: { userId: string }) {
                       <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Orders</span>
                     </div>
                     <div className="flex items-end justify-between">
-                      <p className="text-xl font-bold text-gray-900">{orders.length}</p>
+                      <p className="text-xl font-bold text-gray-900">{pos.stats.totalOrders}</p>
                       <div className="flex gap-1 text-[10px]">
                         {pendingOrders > 0 && (
                           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">{pendingOrders} pending</span>
@@ -211,9 +182,9 @@ export default function DashboardUI({ userId }: { userId: string }) {
                     </div>
                     <div className="flex items-end justify-between">
                       <p className="text-xl font-bold text-gray-900">{totalRevenue.toFixed(2)} TND</p>
-                      {orders.length > 0 && (
+                      {pos.stats.paidOrders > 0 && (
                         <span className="text-[10px] text-emerald-600 font-medium">
-                          avg {(totalRevenue / orders.length).toFixed(2)} TND
+                          avg {pos.stats.averageOrderValue.toFixed(2)} TND
                         </span>
                       )}
                     </div>
@@ -225,8 +196,8 @@ export default function DashboardUI({ userId }: { userId: string }) {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Recent Orders</span>
-                    {orders.length > 3 && (
-                      <span className="text-[10px] text-violet-600 font-medium">+{orders.length - 3} more</span>
+                    {pos.stats.totalOrders > orders.length && (
+                      <span className="text-[10px] text-violet-600 font-medium">+{pos.stats.totalOrders - orders.length} more</span>
                     )}
                   </div>
 
@@ -267,61 +238,6 @@ export default function DashboardUI({ userId }: { userId: string }) {
 
                   </div>
                 </div>
-
-                {/* QUICK ACTION */}
-                {orders.some((o: Order) => o.status === "pending") && (
-                  <button
-                    className="mt-4 w-full text-xs font-medium bg-gradient-to-r from-emerald-600 to-green-600 text-white py-2.5 rounded-xl 
-                              hover:from-emerald-700 hover:to-green-700 transition-all duration-200 
-                              disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20
-                              hover:shadow-emerald-500/30 relative z-10 flex items-center justify-center gap-2"
-                    disabled={!!updatingOrderId}
-                    onClick={async () => {
-                      try {
-                        const pending = orders.find((o: Order) => o.status === "pending");
-                        if (!pending) return;
-
-                        setUpdatingOrderId(pending.id);
-
-                        const res = await fetch("/api/orders/update", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ orderId: pending.id }),
-                        });
-
-                        if (!res.ok) {
-                          throw new Error("Failed to update order");
-                        }
-
-                        setOrdersMap((prev) => ({
-                          ...prev,
-                          [pos.id]: prev[pos.id].map((o: Order) =>
-                            o.id === pending.id
-                              ? { ...o, status: "paid" }
-                              : o
-                          ),
-                        }))
-                      } catch (error) {
-                        console.error(error);
-                        toast.error("Failed to update order");
-                      } finally {
-                        setUpdatingOrderId(null);
-                      }
-                    }}
-                  >
-                    {updatingOrderId ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Mark one as Paid
-                      </>
-                    )}
-                  </button>
-                )}
 
                 {/* CASHIERS */}
                 <div className="mt-4 relative z-10">

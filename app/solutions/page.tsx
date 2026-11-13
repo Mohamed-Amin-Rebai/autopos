@@ -230,7 +230,7 @@ export default function SolutionsPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mt-16">
-            {benefits.map((benefit, index) => {
+            {benefits.map((benefit) => {
               const Icon = benefit.icon;
               return (
                 <div
@@ -261,7 +261,7 @@ export default function SolutionsPage() {
       {/* Stats Section */}
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
+          {stats.map((stat) => (
             <div
               key={stat.label}
               className="text-center group p-6 rounded-2xl hover:bg-white/50 hover:shadow-sm transition-all duration-300"

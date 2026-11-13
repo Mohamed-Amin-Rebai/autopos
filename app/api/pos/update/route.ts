@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 import type { POSStoredData } from "@/lib/types";
+import type { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
 
@@ -21,6 +23,13 @@ export async function POST(req: Request) {
     if (!data || !posId) {
       return NextResponse.json(
         { error: "Missing data or posId" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof posId !== "string" || !isValidObjectId(posId)) {
+      return NextResponse.json(
+        { error: "Invalid POS ID" },
         { status: 400 }
       );
     }
@@ -54,6 +63,7 @@ export async function POST(req: Request) {
         {
           label: "Manual save",
           data,
+          createdAt: new Date().toISOString(),
         },
       ],
     };
@@ -62,7 +72,7 @@ export async function POST(req: Request) {
     const updated = await prisma.pOS.update({
       where: { id: posId },
       data: {
-        data: updatedData,
+        data: updatedData as Prisma.InputJsonValue,
       },
     });
 

@@ -33,7 +33,16 @@ export default function AppPage() {
         return;
       }
 
-      router.push(`/pos/${result.posId}`)
+      const promotionResponse = await fetch("/api/users/promote", {
+        method: "POST",
+      });
+
+      if (!promotionResponse.ok) {
+        toast.error("POS created, but account setup failed. Please try again.");
+        return;
+      }
+
+      router.push(`/pos/${result.posId}`);
     } catch {
       toast.error("AI is busy, try again");
     } finally {

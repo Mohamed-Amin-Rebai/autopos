@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter} from "next/navigation";
 import CategoryList from "@/components/CategoryList";
 import ProductGrid from "@/components/ProductGrid";
@@ -25,7 +25,7 @@ export default function CashierUI(
   const [cashier, setCashier] = useState<Cashier>();
   const router = useRouter();
   
-  const loadPOS = async () => {
+  const loadPOS = useCallback(async () => {
     if (!cashierId) {
       router.push("/");
       return null;
@@ -46,7 +46,7 @@ export default function CashierUI(
     }
     
     return response;
-  }
+  }, [cashierId, router]);
 
   useEffect(() => {
     const fetchPOS = async () => {
@@ -62,7 +62,7 @@ export default function CashierUI(
     };
 
     fetchPOS();
-  }, [cashierId]);
+  }, [loadPOS, router]);
 
   if (loading) {
     return (
@@ -141,9 +141,62 @@ export default function CashierUI(
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col p-4 md:p-6">
 
+      {/* Cashier Top Bar */}
+      <div className="sticky top-0 z-30 max-w-7xl mx-auto w-full mb-4 bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200/60 p-3 md:px-6 md:py-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/25">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900 text-base">
+                  {cashier?.username}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-200/60">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  Terminal Online
+                </span>
+              </div>
+              <p className="text-xs text-gray-400">Station Active</p>
+            </div>
+          </div>
 
+          <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-50 rounded-xl border border-emerald-200/50">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <div className="text-left">
+                <p className="text-[10px] uppercase font-semibold text-gray-500">Opening Cash</p>
+                <p className="font-bold text-emerald-700 text-xs sm:text-sm">
+                  {cashier?.openingCash?.toFixed(2) ?? "0.00"} TND
+                </p>
+              </div>
+            </div>
 
-      {/*POS MAIN - Grid Layout */}
+            <button
+              onClick={async () => {
+                try {
+                  await fetch("/api/cashier-logout", {
+                    method: "POST",
+                  });
+
+                  toast.success("Logged out successfully");
+
+                  window.location.href = `/cashier/${cashierId}`;
+                } catch {
+                  toast.error("Failed to logout");
+                }
+              }}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-medium shadow-md shadow-red-500/20 hover:shadow-red-500/30 transition-all hover:scale-105"
+            >
+              <LogOut size={15} />
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* POS MAIN - Grid Layout */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4">
         <div className="flex gap-4">
           
@@ -182,56 +235,6 @@ export default function CashierUI(
             />
           </div>
 
-        </div>
-      </div>
-
-
-      {/* Cashier Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-4 md:p-5 mb-6 hover:shadow-md transition-shadow">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Cashier</p>
-              <p className="font-semibold text-gray-900 text-lg">
-                {cashier?.username}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-200/50">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              <div>
-                <p className="text-xs text-gray-500">Opening Cash</p>
-                <p className="font-semibold text-emerald-700 text-sm">
-                  {cashier?.openingCash} TND
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={async () => {
-                try {
-                  await fetch("/api/cashier-logout", {
-                    method: "POST",
-                  });
-
-                  toast.success("Logged out successfully");
-
-                  window.location.href = `/cashier/${cashierId}`;
-                } catch {
-                  toast.error("Failed to logout");
-                }
-              }}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all hover:scale-105"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
-          </div>
         </div>
       </div>
 

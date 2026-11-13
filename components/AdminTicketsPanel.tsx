@@ -43,7 +43,11 @@ export default function AdminTicketsPanel({ onCountChange }: Props) {
   }, []);
 
   useEffect(() => {
-    void loadTickets();
+    const timeoutId = window.setTimeout(() => {
+      void loadTickets();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [loadTickets]);
 
   // Notify parent of counts

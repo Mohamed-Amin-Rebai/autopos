@@ -32,7 +32,8 @@ export default function RequestCashiersPage() {
     {
       openingCash: 100,
       shiftStart: "",
-      shiftEnd: ""
+      shiftEnd: "",
+      allowedIp: "",
     },
   ]);
 
@@ -129,6 +130,7 @@ export default function RequestCashiersPage() {
                     openingCash: 100,
                     shiftStart: "",
                     shiftEnd: "",
+                  allowedIp: "",
                   }))
                 );
               }}
@@ -154,7 +156,7 @@ export default function RequestCashiersPage() {
                 <span className="ml-auto text-xs text-gray-400">New Request</span>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                     <DollarSign className="w-3.5 h-3.5" />
@@ -213,6 +215,23 @@ export default function RequestCashiersPage() {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pl-10 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                    Allowed Network IP / CIDR
+                  </label>
+                  <input
+                    type="text"
+                    value={cashier.allowedIp}
+                    placeholder="192.168.1.0/24"
+                    onChange={(e) => {
+                      const updated = [...cashiers];
+                      updated[index].allowedIp = e.target.value;
+                      setCashiers(updated);
+                    }}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white"
+                  />
                 </div>
               </div>
             </div>

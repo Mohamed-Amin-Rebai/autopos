@@ -79,7 +79,11 @@ export default function TicketRow({
 
       {/* Detail */}
       {expanded && (
-        <TicketDetail ticket={ticket} onUpdated={onUpdated} />
+        <TicketDetail
+          key={`${ticket.id}:${ticket.status}:${ticket.resolution ?? ""}`}
+          ticket={ticket}
+          onUpdated={onUpdated}
+        />
       )}
     </div>
   );

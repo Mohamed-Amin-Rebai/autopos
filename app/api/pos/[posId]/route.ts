@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { isValidObjectId } from "@/lib/isValidObjectId";
 
 export async function GET(
   req: Request,
@@ -21,6 +22,13 @@ export async function GET(
     }
 
     const { posId } = await params;
+
+    if (!isValidObjectId(posId)) {
+      return NextResponse.json(
+        { error: "Invalid POS ID" },
+        { status: 400 }
+      );
+    }
 
     const pos = await prisma.pOS.findUnique({
       where: {

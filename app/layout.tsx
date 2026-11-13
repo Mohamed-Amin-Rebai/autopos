@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "AutoPOS",
   description: "AI-powered POS Generator",
   icons: {
-      icon: "/favicon.jpg",
+      icon: "/icon.png",
   },
 };
 

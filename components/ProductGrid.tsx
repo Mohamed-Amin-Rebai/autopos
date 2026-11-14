@@ -17,8 +17,9 @@ export default function ProductGrid({
   return (
     <div
       className={`
-        ${hasCategories ? "flex-1" : "w-full"} 
-        grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto
+        ${hasCategories ? "w-full" : "w-full"}
+        grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 sm:gap-4
+        content-start overflow-y-auto
         scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent
       `}
     >
@@ -40,9 +41,9 @@ export default function ProductGrid({
         <div
           key={p.id}
           onClick={() => addToCart(p)}
-          className="group cursor-pointer bg-white rounded-2xl border border-gray-200/60 shadow-sm 
-                     p-4 flex flex-col transition-all duration-300 
-                     hover:shadow-xl hover:-translate-y-1.5 hover:border-indigo-200/80"
+          className="group cursor-pointer min-w-0 bg-white rounded-2xl border border-slate-200/80 shadow-sm
+                     p-3.5 flex flex-col transition-all duration-300
+                     hover:shadow-lg hover:-translate-y-1 hover:border-indigo-200/80"
         >
 
           {/* IMAGE */}
@@ -81,7 +82,7 @@ export default function ProductGrid({
             )}
 
             {/* PRICE */}
-            <p className="text-lg font-bold text-gray-900 pt-1 border-t border-gray-100/80">
+            <p className="text-lg font-bold text-slate-900 pt-1 border-t border-slate-100/80">
               {p.price} TND
             </p>
 

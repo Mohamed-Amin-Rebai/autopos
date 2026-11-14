@@ -115,10 +115,10 @@ export default function Cart({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
 
       {/* HEADER */}
-      <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
+      <div className="px-4 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/70 sm:px-5">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
             <ShoppingCart className="w-4 h-4 text-indigo-600" />

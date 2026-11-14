@@ -7,15 +7,15 @@ export default function CategoryList({
   setSelected,
 }: CategoryListProps) {
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
+    <div className="w-full h-full min-h-[260px] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden transition-all hover:shadow-md">
       
       {/* HEADER */}
-      <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
+      <div className="px-4 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/70">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-indigo-100 rounded-lg">
             <Grid3x3 className="w-4 h-4 text-indigo-600" />
           </div>
-          <h3 className="font-semibold text-gray-800 text-sm tracking-wide">
+          <h3 className="font-semibold text-slate-800 text-sm tracking-wide">
             Categories
           </h3>
           <span className="ml-auto text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -38,12 +38,12 @@ export default function CategoryList({
                 group w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-200
                 ${isActive 
                   ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]" 
-                  : "text-gray-600 hover:bg-gray-50 hover:scale-[1.01]"
+                  : "text-slate-600 hover:bg-slate-50 hover:scale-[1.01]"
                 }
               `}
             >
               <div className="flex items-center justify-between">
-                <span className={`font-medium ${isActive ? "text-white" : "text-gray-700"}`}>
+                <span className={`font-medium ${isActive ? "text-white" : "text-slate-700"}`}>
                   {cat}
                 </span>
                 {isActive ? (

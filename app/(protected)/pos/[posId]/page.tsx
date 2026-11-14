@@ -230,7 +230,7 @@ export default function POSPage() {
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex flex-col">
 
       {/* TOP BAR */}
-      <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center px-4 py-4 max-w-[1600px] w-full mx-auto sm:px-6">
         <div className="flex items-center gap-3">
 
           <button
@@ -280,12 +280,16 @@ export default function POSPage() {
       </div>
 
       {/* POS MAIN - Grid Layout */}
-      <div className="flex-1 max-w-7xl mx-auto w-full p-4">
-        <div className="flex gap-4">
+      <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 pb-6 sm:px-6">
+        <div className={`grid gap-4 lg:items-stretch ${
+          hasCategories
+            ? "lg:grid-cols-[minmax(170px,200px)_minmax(0,1fr)_minmax(310px,360px)]"
+            : "lg:grid-cols-[minmax(0,1fr)_minmax(310px,360px)]"
+        }`}>
           
           {/* CATEGORY */}
           {hasCategories && (
-            <div className="w-[200px] flex-shrink-0">
+            <div className="min-w-0 lg:min-h-[620px]">
               <CategoryList
                 categories={data.categories}
                 selected={selectedCategory}
@@ -295,7 +299,7 @@ export default function POSPage() {
           )}
 
           {/* PRODUCTS */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 min-h-[620px] rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-sm sm:p-4">
             <ProductGrid
               products={data.products}
               selectedCategory={selectedCategory}
@@ -305,7 +309,7 @@ export default function POSPage() {
           </div>
 
           {/* CART */}
-          <div className="w-[340px] flex-shrink-0">
+          <div className="min-w-0 min-h-[520px] lg:min-h-[620px]">
             <Cart
               cart={cart}
               posId={posId}
@@ -321,8 +325,8 @@ export default function POSPage() {
       </div>
 
       {/* CHAT */}
-      <div className="max-w-7xl mx-auto w-full p-4 pt-0">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden transition-all hover:shadow-xl">
+      <div className="max-w-[1600px] mx-auto w-full px-4 pb-6 sm:px-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden transition-all hover:shadow-md">
           <ChatPanel
             data={data}
             posId={posId}
